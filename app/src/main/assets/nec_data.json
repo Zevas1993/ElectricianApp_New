@@ -1,0 +1,55 @@
+{
+  "ampacities": [
+    {"material": "Copper", "size": "14 AWG", "temp_rating": 60, "ampacity": 15.0},
+    {"material": "Copper", "size": "14 AWG", "temp_rating": 75, "ampacity": 20.0},
+    {"material": "Copper", "size": "14 AWG", "temp_rating": 90, "ampacity": 25.0},
+    {"material": "Copper", "size": "12 AWG", "temp_rating": 60, "ampacity": 20.0},
+    {"material": "Copper", "size": "12 AWG", "temp_rating": 75, "ampacity": 25.0},
+    {"material": "Copper", "size": "12 AWG", "temp_rating": 90, "ampacity": 30.0},
+    {"material": "Copper", "size": "10 AWG", "temp_rating": 60, "ampacity": 30.0},
+    {"material": "Copper", "size": "10 AWG", "temp_rating": 75, "ampacity": 35.0},
+    {"material": "Copper", "size": "10 AWG", "temp_rating": 90, "ampacity": 40.0},
+    {"material": "Copper", "size": "8 AWG", "temp_rating": 60, "ampacity": 40.0},
+    {"material": "Copper", "size": "8 AWG", "temp_rating": 75, "ampacity": 50.0},
+    {"material": "Copper", "size": "8 AWG", "temp_rating": 90, "ampacity": 55.0},
+    {"material": "Aluminum", "size": "12 AWG", "temp_rating": 60, "ampacity": 15.0},
+    {"material": "Aluminum", "size": "12 AWG", "temp_rating": 75, "ampacity": 20.0},
+    {"material": "Aluminum", "size": "12 AWG", "temp_rating": 90, "ampacity": 25.0},
+    {"material": "Aluminum", "size": "10 AWG", "temp_rating": 60, "ampacity": 25.0},
+    {"material": "Aluminum", "size": "10 AWG", "temp_rating": 75, "ampacity": 30.0},
+    {"material": "Aluminum", "size": "10 AWG", "temp_rating": 90, "ampacity": 35.0}
+  ],
+  "conductor_properties": [
+    {"material": "Copper", "size": "14 AWG", "circular_mils": 4110.0, "resistance_dc_1000ft_75c": 3.14},
+    {"material": "Copper", "size": "12 AWG", "circular_mils": 6530.0, "resistance_dc_1000ft_75c": 1.98},
+    {"material": "Copper", "size": "10 AWG", "circular_mils": 10380.0, "resistance_dc_1000ft_75c": 1.24},
+    {"material": "Aluminum", "size": "12 AWG", "circular_mils": 6530.0, "resistance_dc_1000ft_75c": 3.18}
+  ],
+   "conduit_areas": [
+    {"type": "EMT", "size": "1/2\"", "internal_area_in2": 0.304, "fill_area_1_wire_in2": 0.161, "fill_area_2_wires_in2": 0.094, "fill_area_over_2_wires_in2": 0.122},
+    {"type": "EMT", "size": "3/4\"", "internal_area_in2": 0.533, "fill_area_1_wire_in2": 0.283, "fill_area_2_wires_in2": 0.165, "fill_area_over_2_wires_in2": 0.213},
+    {"type": "EMT", "size": "1\"", "internal_area_in2": 0.864, "fill_area_1_wire_in2": 0.458, "fill_area_2_wires_in2": 0.268, "fill_area_over_2_wires_in2": 0.346},
+    {"type": "RMC", "size": "1/2\"", "internal_area_in2": 0.314, "fill_area_1_wire_in2": 0.166, "fill_area_2_wires_in2": 0.097, "fill_area_over_2_wires_in2": 0.126}
+   ],
+   "wire_areas": [
+     {"insulation_type": "THHN", "size": "14 AWG", "area_in2": 0.0097},
+     {"insulation_type": "THHN", "size": "12 AWG", "area_in2": 0.0133},
+     {"insulation_type": "THHN", "size": "10 AWG", "area_in2": 0.0211},
+     {"insulation_type": "XHHW", "size": "14 AWG", "area_in2": 0.0135},
+     {"insulation_type": "XHHW", "size": "12 AWG", "area_in2": 0.0181},
+     {"insulation_type": "XHHW", "size": "10 AWG", "area_in2": 0.0278}
+   ],
+   "box_fill_allowances": [
+     {"item_type": "Conductor", "conductor_size": "18 AWG", "volume_allowance_in3": 1.50, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "16 AWG", "volume_allowance_in3": 1.75, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "14 AWG", "volume_allowance_in3": 2.00, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "12 AWG", "volume_allowance_in3": 2.25, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "10 AWG", "volume_allowance_in3": 2.50, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "8 AWG", "volume_allowance_in3": 3.00, "count_multiplier": 1},
+     {"item_type": "Conductor", "conductor_size": "6 AWG", "volume_allowance_in3": 5.00, "count_multiplier": 1},
+     {"item_type": "Clamp", "conductor_size": "N/A", "volume_allowance_in3": 1.0, "count_multiplier": 1},
+     {"item_type": "Fitting", "conductor_size": "N/A", "volume_allowance_in3": 1.0, "count_multiplier": 1},
+     {"item_type": "Device", "conductor_size": "N/A", "volume_allowance_in3": 1.0, "count_multiplier": 2},
+     {"item_type": "Ground", "conductor_size": "N/A", "volume_allowance_in3": 1.0, "count_multiplier": 1}
+   ]
+}

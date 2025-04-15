@@ -1,0 +1,13 @@
+# Configuration for the ezyang/codemcp server
+# Add project-specific details and commands below
+
+project_prompt = """
+This is the ElectricianApp_New project.
+Please help with coding tasks related to this project.
+"""
+
+[commands]
+# Add commands relevant to this project, e.g., for building, testing, linting
+format = ["./gradlew", "ktlintFormat"]
+test = ["./gradlew", "testDebugUnitTest"]
+build = ["./gradlew", "assembleDebug"]
