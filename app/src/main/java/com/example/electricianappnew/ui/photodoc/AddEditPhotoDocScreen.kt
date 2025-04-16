@@ -14,8 +14,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage // Use coil3 import path
-import coil3.request.ImageRequest // Use coil3 import path
-import coil3.compose.LocalPlatformContext // Import correct context for Coil 3
+// import coil3.request.ImageRequest // Removed as unused
+// import coil3.compose.LocalPlatformContext // Removed as unused
 import com.example.electricianappnew.ui.photodoc.viewmodel.AddEditPhotoDocViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
 
@@ -58,11 +58,9 @@ fun AddEditPhotoDocScreen(
             contentAlignment = Alignment.Center
         ) {
             if (uiState.imageUri != null) {
-                AsyncImage( // Use Coil AsyncImage
-                    model = ImageRequest.Builder(LocalPlatformContext.current) // Use LocalPlatformContext
-                        .data(uiState.imageUri)
-                        // .crossfade(true) // Temporarily removed for diagnostics
-                        .build(),
+                // Simplified AsyncImage call (no builder, no crossfade)
+                AsyncImage(
+                    model = uiState.imageUri, // Pass URI directly
                     contentDescription = "Selected Image",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit

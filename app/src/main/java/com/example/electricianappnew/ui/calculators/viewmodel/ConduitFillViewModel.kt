@@ -9,15 +9,16 @@ import androidx.lifecycle.viewModelScope
 import com.example.electricianappnew.data.model.NecConduitEntry
 import com.example.electricianappnew.data.model.NecWireAreaEntry
 import com.example.electricianappnew.data.repository.NecDataRepository
-import com.example.electricianappnew.ui.calculators.WireEntry // Assuming WireEntry is defined elsewhere (e.g., Screen)
+// Removed incorrect import: import com.example.electricianappnew.ui.calculators.WireEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.firstOrNull // Keep for individual lookups
 import kotlinx.coroutines.launch
+import java.util.Locale // Import Locale
 import javax.inject.Inject
-// Remove potentially conflicting imports if covered by wildcard or unused
-// import com.example.electricianappnew.data.model.NecConduitEntry
-// import com.example.electricianappnew.data.model.NecWireAreaEntry
 import com.example.electricianappnew.data.model.* // Assuming wildcard import exists or add specific needed ones
+import com.example.electricianappnew.data.model.WireEntry // Import centrally defined WireEntry
+
+// Removed local WireEntry definition
 
 // Data class for UI State (excluding dropdown lists, which are separate state in VM)
 data class ConduitFillUiState(
@@ -250,8 +251,5 @@ class ConduitFillViewModel @Inject constructor(
          }
     }
 
-     // Helper to format results nicely (can be shared or moved)
-    private fun Double.formatResult(decimals: Int = 2): String {
-        return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-    }
+    // Removed local formatResult helper - use shared one from common package
 }

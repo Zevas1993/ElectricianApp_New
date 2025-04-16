@@ -18,7 +18,13 @@ import androidx.navigation.NavController // Add NavController import
 import com.example.electricianappnew.ui.calculators.viewmodel.VoltageDropViewModel // Import ViewModel
 import com.example.electricianappnew.ui.common.ExposedDropdownMenuBoxInput
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
+import androidx.compose.material3.Scaffold // Import Scaffold
+import androidx.compose.material3.TopAppBar // Import TopAppBar
 // Removed kotlin.math import as logic is in ViewModel
+import androidx.compose.foundation.verticalScroll // Import verticalScroll
+import androidx.compose.foundation.rememberScrollState // Import rememberScrollState
+import java.util.Locale // Import Locale
+import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared
 
 // TODO: Replace with actual data loading/lookup
 object NecConductorData {
@@ -60,6 +66,7 @@ fun VoltageDropScreen(
     navController: NavController // Add NavController parameter
 ) {
     val uiState = viewModel.uiState // Observe state
+    val scrollState = rememberScrollState() // Add scroll state
 
     Scaffold(
         topBar = {
@@ -80,95 +87,88 @@ fun VoltageDropScreen(
             modifier = modifier
                 .padding(paddingValues) // Apply padding from Scaffold
                 .padding(16.dp) // Add screen padding
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .verticalScroll(scrollState), // Make column scrollable
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Text("Voltage Drop Calculator", style = MaterialTheme.typography.headlineSmall) // Title is now in TopAppBar
             // Spacer(modifier = Modifier.height(16.dp)) // Adjust spacing if needed
 
-        // Inputs
-         OutlinedTextField(
-            value = uiState.systemVoltageStr,
-            onValueChange = viewModel::onSystemVoltageChange, // Use ViewModel
-            label = { Text("System Voltage (V)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-         Spacer(modifier = Modifier.height(8.dp))
-         ExposedDropdownMenuBoxInput(
-             label = "Phase",
-             options = uiState.phases, // Use ViewModel state
-             selectedOption = uiState.selectedPhase,
-             onOptionSelected = viewModel::onPhaseChange, // Use ViewModel
-             modifier = Modifier.fillMaxWidth()
-         )
-         Spacer(modifier = Modifier.height(8.dp))
-         Row(Modifier.fillMaxWidth()){
+            // Inputs
+             OutlinedTextField(
+                value = uiState.systemVoltageStr,
+                onValueChange = viewModel::onSystemVoltageChange, // Use ViewModel
+                label = { Text("System Voltage (V)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+             Spacer(modifier = Modifier.height(8.dp))
              ExposedDropdownMenuBoxInput(
-                 label = "Material",
-                 options = uiState.materials, // Use ViewModel state
-                 selectedOption = uiState.selectedMaterial,
-                 onOptionSelected = viewModel::onMaterialChange, // Use ViewModel
-                 modifier = Modifier.weight(1f)
+                 label = "Phase",
+                 options = uiState.phases, // Use ViewModel state
+                 selectedOption = uiState.selectedPhase,
+                 onOptionSelected = viewModel::onPhaseChange, // Use ViewModel
+                 modifier = Modifier.fillMaxWidth()
              )
-             Spacer(Modifier.width(8.dp))
-             ExposedDropdownMenuBoxInput(
-                 label = "Size",
-                 options = viewModel.wireSizes, // Access directly from ViewModel
-                 selectedOption = uiState.selectedSize,
-                 onOptionSelected = viewModel::onSizeChange, // Use ViewModel
-                 modifier = Modifier.weight(1f)
-             )
-         }
+             Spacer(modifier = Modifier.height(8.dp))
+             Row(Modifier.fillMaxWidth()){
+                 ExposedDropdownMenuBoxInput(
+                     label = "Material",
+                     options = uiState.materials, // Use ViewModel state
+                     selectedOption = uiState.selectedMaterial,
+                     onOptionSelected = viewModel::onMaterialChange, // Use ViewModel
+                     modifier = Modifier.weight(1f)
+                 )
+                 Spacer(Modifier.width(8.dp))
+                 ExposedDropdownMenuBoxInput(
+                     label = "Size",
+                     options = viewModel.wireSizes, // Access directly from ViewModel
+                     selectedOption = uiState.selectedSize,
+                     onOptionSelected = viewModel::onSizeChange, // Use ViewModel
+                     modifier = Modifier.weight(1f)
+                 )
+             }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.loadCurrentStr,
-            onValueChange = viewModel::onLoadCurrentChange, // Use ViewModel
-            label = { Text("Load Current (A)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal
-            modifier = Modifier.fillMaxWidth()
-        )
-         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.distanceStr,
-            onValueChange = viewModel::onDistanceChange, // Use ViewModel
-            label = { Text("One-Way Distance (ft)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Results
-        Text("Results:", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Voltage Drop: ${uiState.voltageDropVolts?.formatResult() ?: "N/A"} V") // Use ViewModel state
-        Text("Voltage Drop %: ${uiState.voltageDropPercent?.formatResult() ?: "N/A"} %") // Use ViewModel state
-        Text("End Voltage: ${uiState.endVoltage?.formatResult() ?: "N/A"} V") // Use ViewModel state
-
-
-        uiState.errorMessage?.let { error -> // Use ViewModel state
             Spacer(modifier = Modifier.height(8.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
-        }
+            OutlinedTextField(
+                value = uiState.loadCurrentStr,
+                onValueChange = viewModel::onLoadCurrentChange, // Use ViewModel
+                label = { Text("Load Current (A)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal
+                modifier = Modifier.fillMaxWidth()
+            )
+             Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.distanceStr,
+                onValueChange = viewModel::onDistanceChange, // Use ViewModel
+                label = { Text("One-Way Distance (ft)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal
+                modifier = Modifier.fillMaxWidth()
+            )
 
-         Spacer(modifier = Modifier.height(16.dp))
-         Button(onClick = viewModel::clearInputs) { // Use ViewModel
-             Text("Clear / Reset")
-         }
-    }
-}
+            Spacer(modifier = Modifier.height(16.dp))
 
-// Helper to format results nicely (can be shared or moved)
-private fun Double.formatResult(decimals: Int = 2): String { // Added decimals parameter
-    return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-}
+            // Results
+            Text("Results:", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Voltage Drop: ${uiState.voltageDropVolts?.formatCalculationResult() ?: "N/A"} V") // Use renamed shared helper
+            Text(text = "Voltage Drop %: ${uiState.voltageDropPercent?.formatCalculationResult() ?: "N/A"} %") // Use renamed shared helper
+            Text(text = "End Voltage: ${uiState.endVoltage?.formatCalculationResult() ?: "N/A"} V") // Use renamed shared helper
 
-@Preview(showBackground = true, widthDp = 360)
-@Composable
-fun VoltageDropScreenPreview() {
-    ElectricianAppNewTheme {
-        VoltageDropScreen() // Preview uses default ViewModel state
-    }
-}
+
+            uiState.errorMessage?.let { error -> // Use ViewModel state
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = error, color = MaterialTheme.colorScheme.error) // Added text=
+            }
+
+             Spacer(modifier = Modifier.height(16.dp))
+             Button(onClick = viewModel::clearInputs) { // Use ViewModel
+                 Text("Clear / Reset")
+             }
+        } // Closes Column
+    } // Closes Scaffold content lambda
+} // Closes VoltageDropScreen composable
+
+// Removed local formatVoltageDropResult - using shared formatCalculationResult
+
+// Preview removed

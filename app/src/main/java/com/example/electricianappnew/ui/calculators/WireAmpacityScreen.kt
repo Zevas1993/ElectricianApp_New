@@ -16,6 +16,13 @@ import androidx.navigation.NavController // Add NavController import
 import com.example.electricianappnew.ui.calculators.viewmodel.WireAmpacityViewModel // Import ViewModel
 import com.example.electricianappnew.ui.common.ExposedDropdownMenuBoxInput
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
+import androidx.compose.foundation.text.KeyboardOptions // Import KeyboardOptions
+import androidx.compose.material3.Scaffold // Import Scaffold
+import androidx.compose.material3.TopAppBar // Import TopAppBar
+import java.util.Locale // Import Locale
+import androidx.compose.foundation.verticalScroll // Import verticalScroll
+import androidx.compose.foundation.rememberScrollState // Import rememberScrollState
+import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared
 
 // TODO: Replace with actual data loading/lookup from NEC tables (e.g., Room DB, Assets)
 object NecAmpacityData {
@@ -100,6 +107,7 @@ fun WireAmpacityScreen(
     navController: NavController // Add NavController parameter
 ) {
     val uiState = viewModel.uiState // Observe state
+    val scrollState = rememberScrollState() // Add scroll state
 
     Scaffold(
         topBar = {
@@ -120,95 +128,88 @@ fun WireAmpacityScreen(
             modifier = modifier
                 .padding(paddingValues) // Apply padding from Scaffold
                 .padding(16.dp) // Add screen padding
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .verticalScroll(scrollState), // Make column scrollable
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Text("Wire Ampacity Calculator", style = MaterialTheme.typography.headlineSmall) // Title is now in TopAppBar
             // Spacer(modifier = Modifier.height(16.dp)) // Adjust spacing if needed
 
-        // Input Fields using Dropdowns
-        Row(Modifier.fillMaxWidth()) {
+            // Input Fields using Dropdowns
+            Row(Modifier.fillMaxWidth()) {
+                 ExposedDropdownMenuBoxInput(
+                     label = "Material",
+                     options = viewModel.materials, // Access directly from ViewModel
+                     selectedOption = uiState.selectedMaterial,
+                     onOptionSelected = viewModel::onMaterialChange, // Call ViewModel
+                     modifier = Modifier.weight(1f)
+                 )
+                 Spacer(Modifier.width(8.dp))
+                 ExposedDropdownMenuBoxInput(
+                     label = "Size",
+                     options = viewModel.wireSizes, // Access directly from ViewModel
+                     selectedOption = uiState.selectedSize,
+                     onOptionSelected = viewModel::onSizeChange, // Call ViewModel
+                     modifier = Modifier.weight(1f)
+                 )
+            }
+             Spacer(modifier = Modifier.height(8.dp))
              ExposedDropdownMenuBoxInput(
-                 label = "Material",
-                 options = viewModel.materials, // Access directly from ViewModel
-                 selectedOption = uiState.selectedMaterial,
-                 onOptionSelected = viewModel::onMaterialChange, // Call ViewModel
-                 modifier = Modifier.weight(1f)
+                 label = "Insulation (Temp Rating)",
+                 options = viewModel.insulationOptions.map { it.first }, // Map Pair list to String list for options
+                 selectedOption = uiState.selectedInsulation,
+                 onOptionSelected = viewModel::onInsulationChange, // Call ViewModel
+                 modifier = Modifier.fillMaxWidth(),
+                 // Find the pair to display the temp rating
+                 optionDisplayTransform = { name ->
+                     val rating = viewModel.insulationOptions.find { it.first == name }?.second
+                     if (rating != null) "$name (${rating}°C)" else name
+                 }
              )
-             Spacer(Modifier.width(8.dp))
-             ExposedDropdownMenuBoxInput(
-                 label = "Size",
-                 options = viewModel.wireSizes, // Access directly from ViewModel
-                 selectedOption = uiState.selectedSize,
-                 onOptionSelected = viewModel::onSizeChange, // Call ViewModel
-                 modifier = Modifier.weight(1f)
-             )
-        }
-         Spacer(modifier = Modifier.height(8.dp))
-         ExposedDropdownMenuBoxInput(
-             label = "Insulation (Temp Rating)",
-             options = viewModel.insulationOptions.map { it.first }, // Map Pair list to String list for options
-             selectedOption = uiState.selectedInsulation,
-             onOptionSelected = viewModel::onInsulationChange, // Call ViewModel
-             modifier = Modifier.fillMaxWidth(),
-             // Find the pair to display the temp rating
-             optionDisplayTransform = { name ->
-                 val rating = viewModel.insulationOptions.find { it.first == name }?.second
-                 if (rating != null) "$name (${rating}°C)" else name
-             }
-         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.ambientTempStr,
-            onValueChange = viewModel::onAmbientTempChange, // Call ViewModel
-            label = { Text("Ambient Temperature (°C)") },
-             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal and correct KeyboardOptions import
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.numConductorsStr,
-            onValueChange = viewModel::onNumConductorsChange, // Call ViewModel
-            label = { Text("Number of Current-Carrying Conductors") },
-             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number), // Correct KeyboardOptions import
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Results Section
-        Text("Results:", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Base Ampacity: ${uiState.baseAmpacity?.formatResult() ?: "N/A"}")
-        Text("Temp Correction Factor: ${uiState.tempCorrectionFactor?.formatResult() ?: "N/A"}")
-        Text("Conductor Adjustment Factor: ${uiState.conductorAdjustmentFactor?.formatResult() ?: "N/A"}")
-        Text("Adjusted Ampacity: ${uiState.adjustedAmpacity?.formatResult() ?: "N/A"} A", style = MaterialTheme.typography.titleLarge)
-
-
-        uiState.errorMessage?.let { error -> // Show error from state
             Spacer(modifier = Modifier.height(8.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
-        }
 
-         Spacer(modifier = Modifier.height(16.dp))
-         Button(onClick = viewModel::clearInputs) { // Call ViewModel
-             Text("Clear / Reset")
-         }
-    }
-}
+            OutlinedTextField(
+                value = uiState.ambientTempStr,
+                onValueChange = viewModel::onAmbientTempChange, // Call ViewModel
+                label = { Text("Ambient Temperature (°C)") },
+                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use Decimal and correct KeyboardOptions import
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
 
-// Helper to format results nicely (can be shared or moved)
-private fun Double.formatResult(decimals: Int = 2): String { // Added decimals parameter
-    return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-}
+            OutlinedTextField(
+                value = uiState.numConductorsStr,
+                onValueChange = viewModel::onNumConductorsChange, // Call ViewModel
+                label = { Text("Number of Current-Carrying Conductors") },
+                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // Correct KeyboardOptions import
+                modifier = Modifier.fillMaxWidth()
+            )
 
-@Preview(showBackground = true, widthDp = 360)
-@Composable
-fun WireAmpacityScreenPreview() {
-    ElectricianAppNewTheme {
-        WireAmpacityScreen() // Preview will use default ViewModel state
-    }
-}
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Results Section
+            Text("Results:", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "Base Ampacity: ${uiState.baseAmpacity?.formatCalculationResult() ?: "N/A"}") // Use renamed shared helper
+            Text(text = "Temp Correction Factor: ${uiState.tempCorrectionFactor?.formatCalculationResult() ?: "N/A"}") // Use renamed shared helper
+            Text(text = "Conductor Adjustment Factor: ${uiState.conductorAdjustmentFactor?.formatCalculationResult() ?: "N/A"}") // Use renamed shared helper
+            Text(text = "Adjusted Ampacity: ${uiState.adjustedAmpacity?.formatCalculationResult() ?: "N/A"} A", style = MaterialTheme.typography.titleLarge) // Use renamed shared helper
+
+
+            uiState.errorMessage?.let { error -> // Show error from state
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = error, color = MaterialTheme.colorScheme.error) // Added text=
+            }
+
+             Spacer(modifier = Modifier.height(16.dp))
+             Button(onClick = viewModel::clearInputs) { // Call ViewModel
+                 Text("Clear / Reset")
+             }
+        } // Closes Column
+    } // Closes Scaffold content lambda
+} // Closes WireAmpacityScreen composable
+
+// Removed local formatAmpacityResult - using shared formatCalculationResult
+
+// Preview removed

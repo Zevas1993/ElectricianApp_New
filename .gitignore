@@ -22,6 +22,7 @@ local.properties
 
 # Log files
 *.log
+*.hprof
 
 # Android Studio Navigation editor files
 .navigation/
@@ -51,3 +52,4 @@ google-services/
 
 # VS Code files
 .vscode/
+.qodo

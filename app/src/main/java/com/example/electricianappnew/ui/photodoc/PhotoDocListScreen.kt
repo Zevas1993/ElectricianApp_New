@@ -20,8 +20,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage // Use coil3 import path
-import coil3.request.ImageRequest // Use coil3 import path
-import coil3.compose.LocalPlatformContext // Import correct context for Coil 3
+// import coil3.request.ImageRequest // Removed as unused
+// import coil3.compose.LocalPlatformContext // Removed as unused
 import com.example.electricianappnew.data.model.PhotoDoc
 import com.example.electricianappnew.ui.photodoc.viewmodel.PhotoDocListViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
@@ -99,12 +99,9 @@ fun PhotoGridItem(
         modifier = Modifier.aspectRatio(1f)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AsyncImage( // Use Coil AsyncImage
-                model = ImageRequest.Builder(LocalPlatformContext.current) // Use LocalPlatformContext
-                    .data(photo.filePath) // Assuming filePath is the correct URI/path string
-                    // .crossfade(true) // Temporarily removed for diagnostics
-                    // Add placeholder/error drawables if desired
-                    .build(),
+            // Simplified AsyncImage call for diagnostics (no builder, no crossfade)
+            AsyncImage(
+                model = photo.filePath, // Pass path directly
                 contentDescription = photo.caption ?: "Photo",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

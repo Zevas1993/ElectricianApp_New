@@ -17,6 +17,8 @@ import androidx.navigation.NavController
 import com.example.electricianappnew.ui.calculators.viewmodel.CalculateVariable
 import com.example.electricianappnew.ui.calculators.viewmodel.OhmsLawViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
+import androidx.compose.material3.Scaffold // Import Scaffold
+import androidx.compose.material3.TopAppBar // Import TopAppBar
 // Removed kotlin.math imports as they are now in ViewModel
 
 @OptIn(ExperimentalMaterial3Api::class) // Needed for TopAppBar
@@ -47,95 +49,96 @@ fun OhmsLawScreen(
             modifier = modifier
                 .padding(paddingValues) // Apply padding from Scaffold
                 .padding(16.dp) // Add screen padding
-                .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Ohm's Law Calculator", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
+                .fillMaxWidth(), // REMOVED incorrect comma
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Ohm's Law Calculator", style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Radio buttons to select calculation target
-        Text("Calculate:")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            CalculateVariable.values().forEach { target ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(
-                        selected = uiState.calculateTarget == target,
-                        onClick = { viewModel.onTargetChange(target) } // Call ViewModel function
-                    )
-                    Text(target.name)
+            // Radio buttons to select calculation target
+            Text("Calculate:")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                CalculateVariable.values().forEach { target ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = uiState.calculateTarget == target,
+                            onClick = { viewModel.onTargetChange(target) } // Call ViewModel function
+                        )
+                        Text(target.name)
+                    }
                 }
             }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Input Fields
-        OutlinedTextField(
-            value = uiState.voltageStr,
-            onValueChange = viewModel::onVoltageChange, // Call ViewModel function
-            label = { Text("Voltage (V)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
-            enabled = uiState.voltageEnabled, // Use state from ViewModel
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.currentStr,
-            onValueChange = viewModel::onCurrentChange, // Call ViewModel function
-            label = { Text("Current (A)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
-            enabled = uiState.currentEnabled, // Use state from ViewModel
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = uiState.resistanceStr,
-            onValueChange = viewModel::onResistanceChange, // Call ViewModel function
-            label = { Text("Resistance (Ω)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
-            enabled = uiState.resistanceEnabled, // Use state from ViewModel
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp)) // More space before output
-
-         OutlinedTextField( // Power is always output only
-            value = uiState.powerStr, // Use state from ViewModel
-            onValueChange = { /* Read-only */ },
-            label = { Text("Power (W)") },
-            readOnly = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        uiState.errorMessage?.let { error -> // Show error message from state
-            Text(error, color = MaterialTheme.colorScheme.error)
+            // Input Fields
+            OutlinedTextField(
+                value = uiState.voltageStr,
+                onValueChange = viewModel::onVoltageChange, // Call ViewModel function
+                label = { Text("Voltage (V)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
+                enabled = uiState.voltageEnabled, // Use state from ViewModel
+                modifier = Modifier.fillMaxWidth()
+            )
             Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(onClick = viewModel::calculate) { // Call ViewModel function
-                Text("Calculate")
+            OutlinedTextField(
+                value = uiState.currentStr,
+                onValueChange = viewModel::onCurrentChange, // Call ViewModel function
+                label = { Text("Current (A)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
+                enabled = uiState.currentEnabled, // Use state from ViewModel
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = uiState.resistanceStr,
+                onValueChange = viewModel::onResistanceChange, // Call ViewModel function
+                label = { Text("Resistance (Ω)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
+                enabled = uiState.resistanceEnabled, // Use state from ViewModel
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp)) // More space before output
+
+             OutlinedTextField( // Power is always output only
+                value = uiState.powerStr, // Use state from ViewModel
+                onValueChange = { /* Read-only */ },
+                label = { Text("Power (W)") },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            uiState.errorMessage?.let { error -> // Show error message from state
+                Text(error, color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            Button(onClick = viewModel::clearInputs) { // Call ViewModel function
-                Text("Clear")
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(onClick = viewModel::calculate) { // Call ViewModel function
+                    Text("Calculate")
+                }
+                Button(onClick = viewModel::clearInputs) { // Call ViewModel function
+                    Text("Clear")
+                }
             }
-        }
-    }
-}
+        } // Closes Column
+    } // Closes Scaffold content lambda
+} // Closes OhmsLawScreen composable
 
 // Removed formatResult helper - it's now private in ViewModel
 
-@Preview(showBackground = true)
-@Composable
-fun OhmsLawScreenPreview() {
-    ElectricianAppNewTheme {
-        // Preview needs a way to provide a dummy ViewModel or use default state
-        // For simplicity, we can just call the composable, but interactions won't work fully
-        OhmsLawScreen()
-    }
-}
+// @Preview(showBackground = true)
+// @Composable
+// fun OhmsLawScreenPreview() {
+//     ElectricianAppNewTheme {
+//         // Preview needs a way to provide a dummy ViewModel or use default state
+//         // For simplicity, we can just call the composable, but interactions won't work fully
+//         // OhmsLawScreen() // Preview needs NavController
+//     }
+// }

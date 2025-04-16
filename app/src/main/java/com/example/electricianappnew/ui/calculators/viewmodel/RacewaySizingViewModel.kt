@@ -8,10 +8,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.electricianappnew.data.model.NecConduitEntry
 import com.example.electricianappnew.data.model.NecWireAreaEntry
 import com.example.electricianappnew.data.repository.NecDataRepository
-import com.example.electricianappnew.ui.calculators.WireEntry // Reuse WireEntry from Conduit Fill
+import com.example.electricianappnew.data.model.WireEntry // Import centrally defined WireEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared helper
+import java.util.Locale // Import Locale
 
 // Detailed UI State for Raceway Sizing
 data class RacewaySizingUiState(
@@ -183,7 +185,8 @@ class RacewaySizingViewModel @Inject constructor(
             val suitableRaceway = availableRaceways.firstOrNull { it.internalAreaSqIn >= minAreaRequired }
 
             if (suitableRaceway == null) {
-                errorMsg = "No suitable size found for ${uiState.selectedRacewayType} with required area ${minAreaRequired.formatResult(4)} in²."
+                 // Use the imported shared helper function here
+                errorMsg = "No suitable size found for ${uiState.selectedRacewayType} with required area ${minAreaRequired.formatCalculationResult(4)} in²." // Ensured correct function name is used
             }
 
             uiState = uiState.copy(
@@ -208,8 +211,5 @@ class RacewaySizingViewModel @Inject constructor(
         calculateRacewaySize() // Recalculate
     }
 
-    // Helper to format results nicely
-    private fun Double.formatResult(decimals: Int = 2): String {
-        return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-    }
+    // Removed local formatResult helper - use shared one from common package
 }

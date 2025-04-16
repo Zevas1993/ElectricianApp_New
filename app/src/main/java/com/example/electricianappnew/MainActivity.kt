@@ -66,15 +66,15 @@ fun AppNavigation() {
         composable("wireAmpacity") { WireAmpacityScreen(navController = navController) } // Pass NavController
         composable("voltageDrop") { VoltageDropScreen(navController = navController) } // Pass NavController
         composable("boxFill") { BoxFillScreen(navController = navController) } // Pass NavController
-        composable("dwellingLoad") { DwellingLoadScreen() }
-        composable("racewaySizing") { RacewaySizingScreen() }
-        composable("motorCalculator") { MotorCalculatorScreen() }
-        composable("transformerSizing") { TransformerSizingScreen() }
+        composable("dwellingLoad") { DwellingLoadScreen(navController = navController) } // Pass NavController
+        composable("racewaySizing") { RacewaySizingScreen(navController = navController) } // Pass NavController
+        composable("motorCalculator") { MotorCalculatorScreen(navController = navController) } // Pass NavController
+        composable("transformerSizing") { TransformerSizingScreen(navController = navController) } // Pass NavController
         composable("ohmsLaw") { OhmsLawScreen(navController = navController) } // Pass NavController
-        composable("seriesParallelResistance") { SeriesParallelResistanceScreen() }
-        composable("pipeBending") { PipeBendingScreen() }
-        composable("luminaireLayout") { LuminaireLayoutScreen() }
-        composable("faultCurrent") { FaultCurrentScreen() }
+        composable("seriesParallelResistance") { SeriesParallelResistanceScreen(navController = navController) } // Pass NavController
+        composable("pipeBending") { PipeBendingScreen(navController = navController) } // Pass NavController
+        composable("luminaireLayout") { LuminaireLayoutScreen(navController = navController) } // Pass NavController
+        composable("faultCurrent") { FaultCurrentScreen(navController = navController) } // Pass NavController
 
         // --- Clients ---
         composable("clientList") {

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Add import for Back Arrow
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,157 +14,120 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController // Add NavController import
 import com.example.electricianappnew.ui.calculators.viewmodel.RacewaySizingViewModel
 import com.example.electricianappnew.ui.common.ExposedDropdownMenuBoxInput // Assuming WireInputRow uses this
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
 import androidx.compose.foundation.text.KeyboardOptions // Import KeyboardOptions
+import androidx.compose.material3.Scaffold // Import Scaffold
+import androidx.compose.material3.TopAppBar // Import TopAppBar
+import java.util.Locale // Import Locale
+import com.example.electricianappnew.data.model.WireEntry // Import WireEntry from central model location
+import com.example.electricianappnew.ui.common.WireInputRow // Import shared
+import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared
 
 // Assuming WireEntry data class is accessible (defined in ConduitFillScreen or common location)
 // Assuming WireInputRow composable is accessible (defined in ConduitFillScreen or common location)
 // If not, they need to be defined here or moved to common.
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class) // Already present, needed for TopAppBar too
 @Composable
 fun RacewaySizingScreen(
     modifier: Modifier = Modifier,
-    viewModel: RacewaySizingViewModel = hiltViewModel()
+    viewModel: RacewaySizingViewModel = hiltViewModel(),
+    navController: NavController // Add NavController parameter
 ) {
     val uiState = viewModel.uiState // Observe state directly
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Raceway Sizing Calculator",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
-        )
-
-        // Raceway Type Selection
-        ExposedDropdownMenuBoxInput(
-            label = "Raceway Type",
-            options = viewModel.racewayTypeNames,
-            selectedOption = uiState.selectedRacewayType,
-            onOptionSelected = viewModel::onRacewayTypeChange,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Conductors:", style = MaterialTheme.typography.titleMedium)
-
-        LazyColumn(modifier = Modifier.weight(1f)) { // Make the list scrollable
-            itemsIndexed(uiState.wireEntries) { index, entry ->
-                // Use the WireInputRow composable (needs to be defined/accessible)
-                WireInputRow( // Assuming WireInputRow exists and takes these params
-                    entry = entry,
-                    wireTypeOptions = viewModel.wireTypeNames, // Pass options
-                    wireSizeOptions = viewModel.availableWireSizes, // Pass options
-                    onEntryChange = { updatedEntry -> viewModel.updateWireEntry(index, updatedEntry) },
-                    onRemoveClick = { viewModel.removeWireEntry(index) }
-                )
-                HorizontalDivider()
-            }
-            // Button moved outside the LazyColumn items
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Raceway Sizing Calculator") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
         }
-
-        // Place Add Button after the list, before results
-        Button(
-            onClick = viewModel::addWireEntry,
-            modifier = Modifier.padding(top = 8.dp).align(Alignment.End) // Align button within the Column
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .padding(paddingValues) // Apply padding from Scaffold
+                .padding(16.dp) // Add screen padding
+                .fillMaxSize()
         ) {
-            Text("Add Conductor")
-        }
+            // Text( // Title is now in TopAppBar
+            //     text = "Raceway Sizing Calculator",
+            //     style = MaterialTheme.typography.headlineMedium,
+            //     modifier = Modifier.padding(bottom = 16.dp).align(Alignment.CenterHorizontally)
+            // )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            // Raceway Type Selection
+            ExposedDropdownMenuBoxInput(
+                label = "Raceway Type",
+                options = viewModel.racewayTypeNames,
+                selectedOption = uiState.selectedRacewayType,
+                onOptionSelected = viewModel::onRacewayTypeChange,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        // --- Results ---
-        Text("Results:", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Total Conductor Area: ${uiState.totalWireArea?.formatResult(4) ?: "N/A"} in²")
-        Text("Required Fill %: ${uiState.requiredFillPercent?.formatResult(0) ?: "N/A"} %")
-        Text("Minimum Raceway Area: ${uiState.minimumRacewayArea?.formatResult(4) ?: "N/A"} in²")
-        Text(
-            text = "Calculated Raceway Size: ${uiState.calculatedRacewaySize ?: "N/A"}",
-            style = MaterialTheme.typography.titleLarge
-        )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Conductors:", style = MaterialTheme.typography.titleMedium)
 
-        uiState.errorMessage?.let { error ->
+            LazyColumn(modifier = Modifier.weight(1f)) { // Make the list scrollable
+                itemsIndexed(uiState.wireEntries) { index, entry ->
+                    // Use the WireInputRow composable (needs to be defined/accessible)
+                    WireInputRow( // Assuming WireInputRow exists and takes these params
+                        entry = entry,
+                        wireTypeOptions = viewModel.wireTypeNames, // Pass options
+                        wireSizeOptions = viewModel.availableWireSizes, // Pass options
+                        onEntryChange = { updatedEntry -> viewModel.updateWireEntry(index, updatedEntry) },
+                        onRemoveClick = { viewModel.removeWireEntry(index) }
+                    )
+                    HorizontalDivider()
+                }
+                // Button moved outside the LazyColumn items
+            }
+
+            // Place Add Button after the list, before results
+            Button(
+                onClick = viewModel::addWireEntry,
+                modifier = Modifier.padding(top = 8.dp).align(Alignment.End) // Align button within the Column
+            ) {
+                Text("Add Conductor")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- Results ---
+            Text("Results:", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
-        }
+            Text(text = "Total Conductor Area: ${uiState.totalWireArea?.formatCalculationResult(4) ?: "N/A"} in²") // Use renamed shared helper
+            Text(text = "Required Fill %: ${uiState.requiredFillPercent?.formatCalculationResult(0) ?: "N/A"} %") // Use renamed shared helper
+            Text(text = "Minimum Raceway Area: ${uiState.minimumRacewayArea?.formatCalculationResult(4) ?: "N/A"} in²") // Use renamed shared helper
+            Text(
+                text = "Calculated Raceway Size: ${uiState.calculatedRacewaySize ?: "N/A"}",
+                style = MaterialTheme.typography.titleLarge
+            )
 
-         Spacer(modifier = Modifier.height(16.dp))
-         Button(onClick = viewModel::clearInputs, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-             Text("Clear / Reset")
-         }
-    }
-}
+            uiState.errorMessage?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = error, color = MaterialTheme.colorScheme.error) // Added text=
+            }
 
-// IMPORTANT: Requires WireInputRow composable to be defined here or imported from common
-// Duplicating/Adapting WireInputRow from ConduitFillScreen for now:
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WireInputRow(
-    entry: WireEntry,
-    wireTypeOptions: List<String>, // Pass options from ViewModel
-    wireSizeOptions: List<String>, // Pass options from ViewModel
-    onEntryChange: (WireEntry) -> Unit,
-    onRemoveClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-         ExposedDropdownMenuBoxInput(
-             label = "Type",
-             options = wireTypeOptions, // Use passed options
-             selectedOption = entry.type,
-             onOptionSelected = { newType ->
-                 // Logic to potentially reset size might be needed here or in VM
-                 onEntryChange(entry.copy(type = newType))
-             },
-             modifier = Modifier.weight(2f)
-         )
-         Spacer(Modifier.width(8.dp))
-          ExposedDropdownMenuBoxInput(
-             label = "Size",
-             options = wireSizeOptions, // Use passed options (might need filtering based on selected type)
-             selectedOption = entry.size,
-             onOptionSelected = { newSize -> onEntryChange(entry.copy(size = newSize)) },
-             modifier = Modifier.weight(1.5f)
-         )
-         Spacer(Modifier.width(8.dp))
-         OutlinedTextField(
-             value = entry.quantity.toString(),
-             onValueChange = { qtyStr ->
-                 onEntryChange(entry.copy(quantity = qtyStr.toIntOrNull() ?: 1))
-             },
-             label = { Text("Qty") },
-             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-             modifier = Modifier.weight(1f)
-         )
+             Spacer(modifier = Modifier.height(16.dp))
+             Button(onClick = viewModel::clearInputs, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                 Text("Clear / Reset")
+             }
+        } // Closes Column
+    } // Closes Scaffold content lambda
+} // Closes RacewaySizingScreen composable
 
-        IconButton(onClick = onRemoveClick) {
-            Icon(Icons.Default.Delete, contentDescription = "Remove Conductor")
-        }
-    }
-}
+// Removed local WireInputRow - using shared version from common package
+// Removed local formatRacewayResult - using shared formatCalculationResult
 
-
-// Helper to format results nicely
-private fun Double.formatResult(decimals: Int = 2): String {
-    return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-}
-
-
-@Preview(showBackground = true, widthDp = 360)
-@Composable
-fun RacewaySizingScreenPreview() {
-    ElectricianAppNewTheme {
-        RacewaySizingScreen()
-    }
-}
+// Preview removed

@@ -101,6 +101,7 @@ This configuration successfully builds (`.\gradlew assembleDebug`).
     *   Pipe Bending: Logic implemented for Offset, 3-Point Saddle, 90-Degree Stub, and 4-Point Saddle. Uses hardcoded bending constants (gain values approximated). UI updated for 4-point inputs.
     *   Luminaire Layout (Lumen Method): Logic implemented using Zonal Cavity method. Requires user input for CU. UI updated for detailed input.
     *   Fault Current (Transformer Impedance Method): Logic implemented to calculate FLA and AFC based on kVA, voltage, and %Z. UI updated.
+    *   **UI Refactoring (All Calculators):** Successfully refactored all 13 calculator screens to use Jetpack Compose `Scaffold` and `TopAppBar`. Consolidated common UI components (`CalculationResultRow`, `InputSectionHeader`, etc.) and helper functions (`formatCalculationResult`) into `ui/common/SharedComponents.kt`. Centralized `WireEntry` data class in `data/model/CalculatorModels.kt`. Resolved associated compilation errors (conflicting overloads, unresolved references, incorrect state access).
 *   **Inventory Management:**
     *   Data models (`Material`, `InventoryItem`, `InventoryTransaction`, `InventoryItemWithMaterial`) created.
     *   `InventoryDao` and `InventoryRepository` created with necessary CRUD methods.
