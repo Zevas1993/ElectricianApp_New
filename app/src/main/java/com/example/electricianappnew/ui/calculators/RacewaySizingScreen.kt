@@ -79,9 +79,9 @@ fun RacewaySizingScreen(
             Text("Conductors:", style = MaterialTheme.typography.titleMedium)
 
             LazyColumn(modifier = Modifier.weight(1f)) { // Make the list scrollable
-                itemsIndexed(uiState.wireEntries) { index, entry ->
-                    // Use the WireInputRow composable (needs to be defined/accessible)
-                    WireInputRow( // Assuming WireInputRow exists and takes these params
+                itemsIndexed(uiState.wireEntries, key = { _, item -> item.id }) { index, entry ->
+                    // Content for each wire entry item
+                    WireInputRow(
                         entry = entry,
                         wireTypeOptions = viewModel.wireTypeNames, // Pass options
                         wireSizeOptions = viewModel.availableWireSizes, // Pass options
@@ -90,18 +90,20 @@ fun RacewaySizingScreen(
                     )
                     HorizontalDivider()
                 }
-                // Button moved outside the LazyColumn items
+                // Add Button as the last item in the LazyColumn
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(onClick = viewModel::addWireEntry) {
+                            Text("Add Conductor")
+                        }
+                    }
+                }
             }
 
-            // Place Add Button after the list, before results
-            Button(
-                onClick = viewModel::addWireEntry,
-                modifier = Modifier.padding(top = 8.dp).align(Alignment.End) // Align button within the Column
-            ) {
-                Text("Add Conductor")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
+            // Spacer(modifier = Modifier.height(24.dp)) // Spacer might not be needed if button is last item
 
             // --- Results ---
             Text("Results:", style = MaterialTheme.typography.titleMedium)
@@ -127,7 +129,6 @@ fun RacewaySizingScreen(
     } // Closes Scaffold content lambda
 } // Closes RacewaySizingScreen composable
 
-// Removed local WireInputRow - using shared version from common package
-// Removed local formatRacewayResult - using shared formatCalculationResult
+// Removed local helpers - using shared versions from ui.common
 
 // Preview removed

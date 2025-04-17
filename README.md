@@ -2,9 +2,9 @@
 
 This project is a complete rebuild of the Electrician App, developed using native Android with Kotlin and Jetpack Compose.
 
-## Current Status (as of 2025-04-13 ~12:40 PM ET)
+## Current Status (as of 2025-04-17 ~08:00 AM ET)
 
-The foundational structure of the application has been established, including:
+The foundational structure of the application has been established, and key features are implemented:
 
 1.  **Project Setup:**
     *   Gradle configured with specified versions (AGP 8.2.2, Gradle 8.13.0, Kotlin 2.0.0).
@@ -101,7 +101,7 @@ This configuration successfully builds (`.\gradlew assembleDebug`).
     *   Pipe Bending: Logic implemented for Offset, 3-Point Saddle, 90-Degree Stub, and 4-Point Saddle. Uses hardcoded bending constants (gain values approximated). UI updated for 4-point inputs.
     *   Luminaire Layout (Lumen Method): Logic implemented using Zonal Cavity method. Requires user input for CU. UI updated for detailed input.
     *   Fault Current (Transformer Impedance Method): Logic implemented to calculate FLA and AFC based on kVA, voltage, and %Z. UI updated.
-    *   **UI Refactoring (All Calculators):** Successfully refactored all 13 calculator screens to use Jetpack Compose `Scaffold` and `TopAppBar`. Consolidated common UI components (`CalculationResultRow`, `InputSectionHeader`, etc.) and helper functions (`formatCalculationResult`) into `ui/common/SharedComponents.kt`. Centralized `WireEntry` data class in `data/model/CalculatorModels.kt`. Resolved associated compilation errors (conflicting overloads, unresolved references, incorrect state access).
+    *   **UI Refactoring (All Calculators):** Successfully refactored all 13 calculator screens (`app/src/main/java/com/example/electricianappnew/ui/calculators/`) to use Jetpack Compose `Scaffold` and `TopAppBar`. Consolidated common UI components (`CalculationResultRow`, `InputSectionHeader`, `LoadInputRow`, `WireInputRow`, `ResistanceInputRow`) and helper functions (`formatCalculationResult`) into `app/src/main/java/com/example/electricianappnew/ui/common/SharedComponents.kt`. Centralized `WireEntry` data class in `app/src/main/java/com/example/electricianappnew/data/model/CalculatorModels.kt`. Resolved associated compilation errors. Build is currently stable.
 *   **Inventory Management:**
     *   Data models (`Material`, `InventoryItem`, `InventoryTransaction`, `InventoryItemWithMaterial`) created.
     *   `InventoryDao` and `InventoryRepository` created with necessary CRUD methods.
@@ -126,18 +126,19 @@ This configuration successfully builds (`.\gradlew assembleDebug`).
     *   ViewModels (`PhotoDocListViewModel`, `AddEditPhotoDocViewModel`) created.
     *   UI Screens (`PhotoDocListScreen`, `AddEditPhotoDocScreen`) created for listing and adding photos (linked to Jobs).
 
-## Immediate Next Steps (Revised Plan - 2025-04-13)
+## Immediate Next Steps (Plan as of 2025-04-17)
 
-1.  **Refine Core Features:**
+1.  **Add Reference Tools:**
+    *   Create a simple screen for standard Circuit Color references (`CircuitColorReferenceScreen.kt`).
+    *   Add a section or screen for common Electrical Formulas (`ElectricalFormulasScreen.kt`).
+    *   Add a section or screen for common Electrical Symbols (`ElectricalSymbolsScreen.kt`).
+2.  **UI/UX Polish & Testing:** Address any remaining UI inconsistencies, improve error messages/loading states, and perform thorough testing.
+3.  **Refine Core Features:**
     *   **Photo Documentation:** Enhance linking (allow linking to Tasks), add a detail view, improve image handling.
     *   **Inventory Usage:** Refine insufficient stock logic and potentially allow editing used quantities on tasks.
-2.  **Implement Search/Filtering:** Add search capabilities to Job, Client, and Inventory list screens.
-3.  **Implement NEC Code Lookup:** Build out the `NecCodeScreen.kt` to effectively search and display the data from `assets/nec_data.json`.
-4.  **Add Reference Tools:**
-    *   Create a simple screen for standard Circuit Color references.
-    *   Add a section or screen for common Electrical Formulas.
-    *   Add a section or screen for common Electrical Symbols.
-5.  **UI/UX Polish & Testing:** Address any remaining UI inconsistencies, improve error messages/loading states, and perform thorough testing.
+4.  **Implement Search/Filtering:** Add search capabilities to Job, Client, and Inventory list screens.
+5.  **Implement NEC Code Lookup:** Build out the `NecCodeScreen.kt` to effectively search and display the data from `assets/nec_data.json`. (Reverted initial attempt, needs careful re-implementation).
+
 
 ## Future Features / Roadmap
 

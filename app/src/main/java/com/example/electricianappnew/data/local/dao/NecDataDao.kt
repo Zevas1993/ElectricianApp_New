@@ -23,6 +23,14 @@ interface NecDataDao {
     @Query("SELECT * FROM nec_ampacities") // Added: Get all ampacity entries
     fun getAllNecAmpacityEntries(): Flow<List<NecAmpacityEntry>>
 
+    // Search Ampacity Table
+    @Query("SELECT * FROM nec_ampacities WHERE material LIKE '%' || :query || '%' OR size LIKE '%' || :query || '%'")
+    fun searchAmpacity(query: String): Flow<List<NecAmpacityEntry>>
+
+    // Search Conduit Table
+    @Query("SELECT * FROM nec_conduit_areas WHERE type LIKE '%' || :query || '%' OR size LIKE '%' || :query || '%'")
+    fun searchConduit(query: String): Flow<List<NecConduitEntry>>
+
     // --- Temperature Correction Factors (Table 310.15(B)) ---
     // Assuming a table structure like: temp_rating, ambient_temp_celsius, correction_factor
     @Query("SELECT * FROM nec_temp_corrections WHERE temp_rating = :tempRating ORDER BY ABS(ambient_temp_celsius - :ambientTempC) LIMIT 1")
@@ -55,6 +63,10 @@ interface NecDataDao {
 
     @Query("SELECT * FROM nec_conductor_properties") // Added: Get all conductor entries
     fun getAllNecConductorEntries(): Flow<List<NecConductorEntry>>
+
+    // Search Conductor Properties Table
+    @Query("SELECT * FROM nec_conductor_properties WHERE material LIKE '%' || :query || '%' OR size LIKE '%' || :query || '%'")
+    fun searchConductorProperties(query: String): Flow<List<NecConductorEntry>>
 
     // --- Conduit Areas (Table 4) ---
      @Query("SELECT * FROM nec_conduit_areas WHERE type = :type AND size = :size")
@@ -91,6 +103,10 @@ interface NecDataDao {
     @Query("SELECT * FROM nec_wire_areas") // Added: Get all wire area entries
     fun getAllNecWireAreaEntries(): Flow<List<NecWireAreaEntry>>
 
+    // Search Wire Area Table
+    @Query("SELECT * FROM nec_wire_areas WHERE insulation_type LIKE '%' || :query || '%' OR size LIKE '%' || :query || '%'")
+    fun searchWireArea(query: String): Flow<List<NecWireAreaEntry>>
+
     // --- Box Fill Allowances (Table 314.16(B)) ---
      @Query("SELECT * FROM nec_box_fill_allowances WHERE item_type = :itemType AND conductor_size = :conductorSize")
     suspend fun getBoxFillEntry(itemType: String, conductorSize: String): NecBoxFillEntry?
@@ -103,6 +119,10 @@ interface NecDataDao {
 
     @Query("SELECT * FROM nec_box_fill_allowances") // Added: Get all box fill entries
     fun getAllNecBoxFillEntries(): Flow<List<NecBoxFillEntry>>
+
+    // Search Box Fill Table
+    @Query("SELECT * FROM nec_box_fill_allowances WHERE item_type LIKE '%' || :query || '%' OR conductor_size LIKE '%' || :query || '%'")
+    fun searchBoxFill(query: String): Flow<List<NecBoxFillEntry>>
 
     // --- Motor FLC (Tables 430.248 & 430.250) ---
     @Query("SELECT * FROM nec_motor_flc WHERE hp = :hp AND voltage = :voltage AND phase = :phase LIMIT 1")

@@ -96,3 +96,42 @@ data class NecConductorImpedanceEntry(
     @ColumnInfo(name = "resistance_ac_ohms_1000ft") val resistanceAcOhmsPer1000ft: Double, // Effective Z at 0.85 PF
     @ColumnInfo(name = "reactance_xl_ohms_1000ft") val reactanceOhmsPer1000ft: Double // Reactance (Xl)
 )
+
+// --- Sealed Interface for NEC Search Results ---
+sealed interface NecSearchResult {
+    val type: String // Common property to identify the result type
+    val title: String // Common property for display title
+    val details: String // Common property for display details
+
+    data class AmpacityResult(val entry: NecAmpacityEntry) : NecSearchResult {
+        override val type: String = "Ampacity (310.16)"
+        override val title: String = "${entry.size} ${entry.material} @ ${entry.tempRating}°C"
+        override val details: String = "Ampacity: ${entry.ampacity} A"
+    }
+
+    data class ConduitResult(val entry: NecConduitEntry) : NecSearchResult {
+        override val type: String = "Conduit Area (Ch 9, Tbl 4)"
+        override val title: String = "${entry.size} ${entry.type}"
+        override val details: String = "Area: ${entry.internalAreaSqIn} in², >2 Wires Fill: ${entry.fillAreaOver2WiresSqIn} in² (40%)"
+    }
+
+    data class BoxFillResult(val entry: NecBoxFillEntry) : NecSearchResult {
+        override val type: String = "Box Fill (314.16(B))"
+        override val title: String = "${entry.itemType} (${entry.conductorSize})"
+        override val details: String = "Volume: ${entry.volumeAllowanceCuIn} in³ (Multiplier: ${entry.countMultiplier})"
+    }
+
+    data class WireAreaResult(val entry: NecWireAreaEntry) : NecSearchResult {
+        override val type: String = "Wire Area (Ch 9, Tbl 5)"
+        override val title: String = "${entry.size} ${entry.insulationType}"
+        override val details: String = "Area: ${entry.areaSqIn} in²"
+    }
+
+    data class ConductorResult(val entry: NecConductorEntry) : NecSearchResult {
+        override val type: String = "Conductor Properties (Ch 9, Tbl 8)"
+        override val title: String = "${entry.size} ${entry.material}"
+        override val details: String = "DC Res: ${entry.resistanceDcOhmsPer1000ft} Ω/kft, Area: ${entry.areaSqIn ?: "-"} in², CM: ${entry.circularMils}"
+    }
+
+    // Add other result types here later
+}

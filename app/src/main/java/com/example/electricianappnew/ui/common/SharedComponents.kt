@@ -1,20 +1,47 @@
 package com.example.electricianappnew.ui.common
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions // Ensure this is the only KeyboardOptions import
+// Only import necessary foundation components directly
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions // Explicitly import the correct one
+// Material Icons
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
+// Material 3 Components
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+// Runtime
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable // Use rememberSaveable if state needs to survive process death
+// UI Utils
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.electricianappnew.ui.calculators.viewmodel.ResistanceEntry // Import needed for ResistanceInputRow
-import com.example.electricianappnew.data.model.WireEntry // Import WireEntry from central model location
+// Project specific models (ensure correct paths)
+import com.example.electricianappnew.ui.calculators.viewmodel.ResistanceEntry
+import com.example.electricianappnew.data.model.WireEntry
+// Java utils
 import java.util.Locale
 
 // Reusable Dropdown Component
@@ -136,7 +163,7 @@ fun WireInputRow(
                  onEntryChange(entry.copy(quantity = qtyStr.toIntOrNull() ?: 1))
              },
              label = { Text("Qty") },
-             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // Use correct import
              modifier = Modifier.weight(1f)
          )
 
@@ -166,7 +193,7 @@ fun ResistanceInputRow(
             value = entry.valueStr,
             onValueChange = onValueChange,
             label = { Text("R${index + 1} (Ω)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use correct import
             modifier = Modifier.weight(1f),
             singleLine = true
         )
@@ -197,7 +224,7 @@ fun LoadInputRow(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType), // Use correct import
         enabled = enabled,
         modifier = modifier
             .fillMaxWidth()

@@ -1,8 +1,10 @@
 package com.example.electricianappnew.data.repository
 
-import com.example.electricianappnew.data.local.dao.NecDataDao
+import com.example.electricianappnew.data.local.dao.NecDataDao // Keep only one import
 import com.example.electricianappnew.data.model.*
-import kotlinx.coroutines.flow.Flow // Added missing Flow import
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map // Ensure correct map import
+import kotlinx.coroutines.flow.combine // Ensure correct combine import
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,6 +44,9 @@ interface NecDataRepository {
     fun getAllNecMotorProtectionEntries(): Flow<List<NecMotorProtectionEntry>>
     fun getAllNecConductorImpedanceEntries(): Flow<List<NecConductorImpedanceEntry>>
     // Removed getAllRaceways and getAllWires as models/DAO methods don't exist
+
+    // --- NEC Search ---
+    fun searchNecData(query: String): Flow<List<NecSearchResult>> // Added for search
 
     // Add functions for other NEC data lookups as needed
 }
@@ -138,4 +143,38 @@ class NecDataRepositoryImpl @Inject constructor(
     override fun getAllNecMotorProtectionEntries(): Flow<List<NecMotorProtectionEntry>> = necDataDao.getAllNecMotorProtectionEntries()
     override fun getAllNecConductorImpedanceEntries(): Flow<List<NecConductorImpedanceEntry>> = necDataDao.getAllNecConductorImpedanceEntries()
     // Removed implementations for getAllRaceways and getAllWires
+
+    // --- NEC Search Implementation (Incremental) ---
+    override fun searchNecData(query: String): Flow<List<NecSearchResult>> {
+        val ampacityResults: Flow<List<NecSearchResult>> = necDataDao.searchAmpacity(query).map { list ->
+            list.map { NecSearchResult.AmpacityResult(it) }
+        }
+        val conduitResults: Flow<List<NecSearchResult>> = necDataDao.searchConduit(query).map { list ->
+            list.map { NecSearchResult.ConduitResult(it) }
+        }
+        val boxFillResults: Flow<List<NecSearchResult>> = necDataDao.searchBoxFill(query).map { list ->
+            list.map { NecSearchResult.BoxFillResult(it) }
+        }
+        val conductorResults: Flow<List<NecSearchResult>> = necDataDao.searchConductorProperties(query).map { list -> // Corrected variable name
+            list.map { NecSearchResult.ConductorResult(it) }
+        }
+        val wireAreaResults: Flow<List<NecSearchResult>> = necDataDao.searchWireArea(query).map { list -> // Corrected variable name
+            list.map { NecSearchResult.WireAreaResult(it) }
+        }
+        // Removed tempCorrectionResults flow
+
+        // Combine flows from different tables
+        return combine(
+            ampacityResults,
+            conduitResults,
+            boxFillResults,
+            conductorResults,
+            wireAreaResults
+            // Removed tempCorrectionResults from combine parameters
+        ) { ampacity, conduit, boxFill, conductor, wireArea ->
+            // Combine results by concatenating the lists from each flow
+            ampacity + conduit + boxFill + conductor + wireArea
+            // TODO: Add flows from other search DAO methods and combine them here
+        }
+    }
 }
