@@ -2,23 +2,20 @@ package com.example.electricianappnew.ui.calculators.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.* // Import all runtime functions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electricianappnew.data.model.NecConduitEntry
 import com.example.electricianappnew.data.model.NecWireAreaEntry
 import com.example.electricianappnew.data.repository.NecDataRepository
-// Removed incorrect import: import com.example.electricianappnew.ui.calculators.WireEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.firstOrNull // Keep for individual lookups
+import kotlinx.coroutines.flow.* // Import Flow operators
 import kotlinx.coroutines.launch
-import java.util.Locale // Import Locale
+import java.util.Locale
 import javax.inject.Inject
-import com.example.electricianappnew.data.model.* // Assuming wildcard import exists or add specific needed ones
-import com.example.electricianappnew.data.model.WireEntry // Import centrally defined WireEntry
-
-// Removed local WireEntry definition
+import android.util.Log
+import com.example.electricianappnew.data.model.*
+import com.example.electricianappnew.data.model.WireEntry
 
 // Data class for UI State (excluding dropdown lists, which are separate state in VM)
 data class ConduitFillUiState(
@@ -30,180 +27,244 @@ data class ConduitFillUiState(
     val fillPercentage: Double? = null,
     val isOverfill: Boolean = false,
     val errorMessage: String? = null
+    // Removed loading states - handled by initialValue in stateIn
 )
 
 @HiltViewModel
 class ConduitFillViewModel @Inject constructor(
-     private val necDataRepository: NecDataRepository // Inject repository
+    private val necDataRepository: NecDataRepository // Inject repository
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(ConduitFillUiState())
-        private set
+    private val _uiState = MutableStateFlow(ConduitFillUiState())
+    val uiState: StateFlow<ConduitFillUiState> = _uiState.asStateFlow()
 
-    // State for dropdown options
-    var conduitTypeNames by mutableStateOf<List<String>>(emptyList())
-        private set
-    var availableConduitSizes by mutableStateOf<List<String>>(emptyList())
-        private set
-    var wireTypeNames by mutableStateOf<List<String>>(emptyList())
-        private set
-    var availableWireSizes by mutableStateOf<List<String>>(emptyList()) // Sizes for the currently selected wire type in WireEntry
+    // --- StateFlows for Dropdown Options ---
 
-    // Removed hardcoded lists
+    // Conduit Types
+    val conduitTypeNames: StateFlow<List<String>> = necDataRepository.getDistinctConduitTypes()
+        // .onStart { Log.d("ConduitFillVM", "Starting conduit types flow...") } // Removed Log
+        // .onEach { Log.d("ConduitFillVM", "Received conduit types: $it") } // Removed Log
+        .catch { e ->
+            Log.e("ConduitFillVM", "Error fetching conduit types", e) // Keep error log
+            _uiState.update { it.copy(errorMessage = "Error loading conduit types: ${e.message}") } // Removed loading state update
+            emit(emptyList()) // Emit empty list on error
+        }
+        // Removed onCompletion loading state update
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    init {
-        loadInitialData()
-    }
+    // Removed conductorMaterials flow
 
-    private fun loadInitialData() {
-        viewModelScope.launch {
-            // Fetch initial dropdown lists from repository
-            conduitTypeNames = necDataRepository.getDistinctConduitTypes()
-            wireTypeNames = necDataRepository.getDistinctWireTypes()
+    // Conductor Sizes (Distinct sizes from nec_wire_areas table)
+    val conductorSizes: StateFlow<List<String>> = necDataRepository.getAllNecWireAreaEntries()
+        .map { entries ->
+            // Extract distinct sizes and sort them (implement custom sort if needed)
+            entries.map { it.size }.distinct().sorted() // Simple alphabetical sort for now
+        }
+        .catch { e ->
+            Log.e("ConduitFillVM", "Error fetching distinct conductor sizes from wire areas", e)
+            _uiState.update { it.copy(errorMessage = "Error loading conductor sizes: ${e.message}") }
+            emit(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-            val initialConduitType = conduitTypeNames.firstOrNull() ?: ""
-            val initialWireType = wireTypeNames.firstOrNull() ?: ""
 
-            // Fetch initial sizes based on the first type
-            availableConduitSizes = if (initialConduitType.isNotEmpty()) {
-                necDataRepository.getDistinctConduitSizesForType(initialConduitType)
+    // Wire Insulation Types (from nec_wire_areas) - This is correct
+    val wireTypeNames: StateFlow<List<String>> = necDataRepository.getDistinctWireTypes()
+        // .onStart { Log.d("ConduitFillVM", "Starting wire insulation types flow...") } // Removed Log
+        // .onEach { Log.d("ConduitFillVM", "Received wire insulation types: $it") } // Removed Log
+        .catch { e ->
+            Log.e("ConduitFillVM", "Error fetching wire types", e) // Keep error log
+            _uiState.update { it.copy(errorMessage = "Error loading wire types: ${e.message}") } // Removed loading state update
+            emit(emptyList())
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    // Available Conduit Sizes (depends on selectedConduitTypeName)
+    // Use flatMapLatest to react to changes in selectedConduitTypeName
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val availableConduitSizes: StateFlow<List<String>> = _uiState
+        .map { it.selectedConduitTypeName } // Observe changes in selected type name
+        .distinctUntilChanged() // Only react when the name actually changes
+        .onEach { typeName -> Log.d("ConduitFillVM", "flatMapLatest: Input typeName changed to: '$typeName'") } // ADDED Log
+        .flatMapLatest { typeName -> // Switch to the new flow when typeName changes
+            Log.d("ConduitFillVM", "flatMapLatest: Executing lambda for typeName: '$typeName'") // ADDED Log
+            if (typeName.isBlank()) {
+                Log.d("ConduitFillVM", "flatMapLatest: typeName is blank, returning empty list flow.") // ADDED Log
+                flowOf(emptyList()) // Return empty list if no type selected
             } else {
-                emptyList()
-            }
-            availableWireSizes = if (initialWireType.isNotEmpty()) {
-                necDataRepository.getDistinctWireSizesForType(initialWireType)
-            } else {
-                emptyList()
-            }
-
-            val initialConduitSize = availableConduitSizes.firstOrNull() ?: ""
-            val initialWireSize = availableWireSizes.firstOrNull() ?: ""
-
-            uiState = uiState.copy(
-                selectedConduitTypeName = initialConduitType,
-                selectedConduitSize = initialConduitSize,
-                wireEntries = listOf(WireEntry(type = initialWireType, size = initialWireSize)) // Start with defaults
-            )
-            // Initial calculation might be needed if defaults are valid
-            if (initialConduitType.isNotEmpty() && initialConduitSize.isNotEmpty()) {
-                 calculateFill()
+                Log.d("ConduitFillVM", "flatMapLatest: typeName is '$typeName', calling repository...") // ADDED Log
+                // Removed loading state update
+                necDataRepository.getDistinctConduitSizesForType(typeName)
+                    .onStart { Log.d("ConduitFillVM", "flatMapLatest: Starting conduit sizes flow for type: '$typeName'") } // ADDED Log
+                    .onEach { sizes -> Log.d("ConduitFillVM", "flatMapLatest: Received conduit sizes for '$typeName': $sizes") } // ADDED Log
+                    .catch { e ->
+                        Log.e("ConduitFillVM", "flatMapLatest: Error fetching conduit sizes for $typeName", e) // Keep error log
+                        _uiState.update { it.copy(errorMessage = "Error loading sizes for $typeName: ${e.message}") } // Removed loading state update
+                        emit(emptyList())
+                    }
+                    // Removed onCompletion loading state update
             }
         }
-    }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    // Function to update available conduit sizes when type changes
-    private fun updateAvailableConduitSizes(conduitType: String) {
-        viewModelScope.launch {
-            availableConduitSizes = necDataRepository.getDistinctConduitSizesForType(conduitType)
-            // Reset selected size if the current one isn't valid for the new type
-            val currentSize = uiState.selectedConduitSize
-            val newSize = if (availableConduitSizes.contains(currentSize)) currentSize else availableConduitSizes.firstOrNull() ?: ""
-            uiState = uiState.copy(selectedConduitSize = newSize)
-            calculateFill() // Recalculate after size might have changed
-        }
-    }
-
-     // Function to update available wire sizes for a specific entry (or globally if needed)
-    private fun updateAvailableWireSizes(wireType: String) {
-         viewModelScope.launch {
-             availableWireSizes = necDataRepository.getDistinctWireSizesForType(wireType)
-             // Note: This updates the *global* list for the ViewModel.
-             // The UI dropdown for each row might need to handle filtering/validation
-             // if the selected size becomes invalid for the new type.
-             // For simplicity now, we let the user re-select the size if needed.
-             calculateFill() // Recalculate as wire areas might change implicitly
-         }
-    }
-
+    // Removed init block, observeInitialSelections, and fetchWireSizesForType
+    // Initial state will be handled by StateFlow initial values and UI collection
 
     fun onConduitTypeChange(newTypeName: String) {
-        uiState = uiState.copy(selectedConduitTypeName = newTypeName, errorMessage = null)
-        updateAvailableConduitSizes(newTypeName) // Fetch and update sizes for the new type
-        // calculateFill() is called within updateAvailableConduitSizes
+        // Log.d("ConduitFillVM", "onConduitTypeChange: $newTypeName") // Removed Log
+        // Update the selected type. The availableConduitSizes flow will react.
+        // Reset the selected size. The UI should observe availableConduitSizes and select the first one when it updates.
+        _uiState.update { it.copy(selectedConduitTypeName = newTypeName, selectedConduitSize = "", errorMessage = null) }
+        // No need to manually wait for sizes here, UI will handle it reactively.
+        // Calculation will be triggered by onConduitSizeChange when UI updates the size.
     }
 
     fun onConduitSizeChange(newSize: String) {
-        uiState = uiState.copy(selectedConduitSize = newSize, errorMessage = null)
-        calculateFill()
+        // Log.d("ConduitFillVM", "onConduitSizeChange: $newSize") // Removed Log
+        if (newSize.isNotBlank()) { // Only calculate if a valid size is selected
+             _uiState.update { it.copy(selectedConduitSize = newSize, errorMessage = null) }
+             calculateFill()
+        } else {
+             _uiState.update { it.copy(selectedConduitSize = "", errorMessage = "Please select a conduit size.") } // Keep size blank, maybe show error
+        }
     }
 
      fun addWireEntry() {
-        // Add a new entry with default/first available type and size
-         val defaultType = wireTypeNames.firstOrNull() ?: ""
-         // Fetch sizes for the default type if needed (though availableWireSizes might be stale if types differ)
-         // For simplicity, use the current availableWireSizes list, assuming it's relevant or user will adjust
-         val defaultSize = availableWireSizes.firstOrNull() ?: ""
+         viewModelScope.launch { // Need scope for repository access
+             // Get default values from the current state of the flows
+             val defaultWireType = wireTypeNames.value.firstOrNull() ?: ""
+             // Fetch sizes specifically for the default wire type
+             val sizesForDefaultType = if (defaultWireType.isNotEmpty()) {
+                 try {
+                     necDataRepository.getDistinctWireSizesForType(defaultWireType).firstOrNull() ?: emptyList()
+                 } catch (e: Exception) {
+                     Log.e("ConduitFillVM", "Error fetching sizes for default type $defaultWireType", e)
+                     emptyList() // Fallback to empty list on error
+                 }
+             } else {
+                 emptyList()
+              }
+              val defaultConductorSize = sizesForDefaultType.firstOrNull() ?: "" // Get first size for the specific type
 
-        val updatedList = uiState.wireEntries + WireEntry(type = defaultType, size = defaultSize)
-        uiState = uiState.copy(wireEntries = updatedList)
-        calculateFill() // Recalculate after adding
-    }
+              // Log.d("ConduitFillVM", "Adding wire entry with defaults: Type=$defaultWireType, Size=$defaultConductorSize") // Removed Log
+
+              val newEntry = WireEntry(type = defaultWireType, size = defaultConductorSize) // Use correct default size
+              _uiState.update { currentState ->
+                  currentState.copy(wireEntries = currentState.wireEntries + newEntry)
+              }
+              // Log.d("ConduitFillVM", "Wire entry added.") // Removed Log
+              calculateFill() // Recalculate after adding (already outside launch, but fine here)
+          }
+          // Log.d("ConduitFillVM", "Wire entry added.") // Removed Log
+          calculateFill() // Recalculate after adding
+     }
 
      fun removeWireEntry(index: Int) {
-        if (uiState.wireEntries.size > 1) {
-            val updatedList = uiState.wireEntries.filterIndexed { i, _ -> i != index }
-            uiState = uiState.copy(wireEntries = updatedList)
+        if (_uiState.value.wireEntries.size > 1) {
+            _uiState.update { currentState ->
+                val updatedList = currentState.wireEntries.filterIndexed { i, _ -> i != index }
+                currentState.copy(wireEntries = updatedList)
+            }
             calculateFill()
         }
     }
 
-     fun updateWireEntry(index: Int, updatedEntry: WireEntry) {
-        val currentList = uiState.wireEntries.toMutableList()
-        if (index >= 0 && index < currentList.size) {
-             // Ensure quantity is at least 1
-            val finalEntry = if(updatedEntry.quantity < 1) updatedEntry.copy(quantity = 1) else updatedEntry
+    fun updateWireEntry(index: Int, updatedEntry: WireEntry) {
+        viewModelScope.launch {
+            val currentList = _uiState.value.wireEntries.toMutableList()
+            if (index >= 0 && index < currentList.size) {
+                val originalEntry = currentList[index]
+                var entryToUpdate = updatedEntry
 
-             // If type changed, fetch new available sizes for that type
-             if (currentList[index].type != finalEntry.type) {
-                 updateAvailableWireSizes(finalEntry.type) // Update the general list
-                 // Decide how to handle the size: keep it, reset it, or validate it?
-                 // Option: Keep it, let UI handle showing valid options.
-                 currentList[index] = finalEntry
-             } else {
-                currentList[index] = finalEntry
+                // Ensure quantity is positive
+                if (entryToUpdate.quantity < 1) {
+                    entryToUpdate = entryToUpdate.copy(quantity = 1)
+                }
+
+                // Removed logic for fetching/updating availableSizes.
+                // The UI will be responsible for fetching/displaying relevant sizes based on the selected type.
+                // We just update the entry in the list.
+                currentList[index] = entryToUpdate
+
+                _uiState.update { it.copy(wireEntries = currentList.toList(), errorMessage = null) }
+                calculateFill() // Calculate fill after state update
+            }
+        }
+    }
+
+
+    fun calculateFill() {
+        viewModelScope.launch {
+             val currentState = _uiState.value // Get snapshot of current state
+
+             if (currentState.selectedConduitTypeName.isBlank() || currentState.selectedConduitSize.isBlank()) {
+                 // Log.d("ConduitFillVM", "Skipping calculation: Conduit type or size is blank.") // Removed Log
+                 // Don't clear results here, let the UI show existing ones until valid inputs are back
+                 return@launch
              }
 
-            uiState = uiState.copy(wireEntries = currentList.toList(), errorMessage = null)
-            calculateFill()
-        }
-    }
+             // Log.d("ConduitFillVM", "Calculating fill for: ${currentState.selectedConduitTypeName} ${currentState.selectedConduitSize}") // Removed Log
 
-
-    // Make public for LaunchedEffect in Screen
-    fun calculateFill() {
-         viewModelScope.launch {
-            if (uiState.selectedConduitTypeName.isBlank() || uiState.selectedConduitSize.isBlank()) {
-                 // Don't calculate if conduit type/size not selected yet (during init)
-                 return@launch
+             // Fetch conduit area from repository
+            val conduitEntry = try {
+                 necDataRepository.getConduitEntry(currentState.selectedConduitTypeName, currentState.selectedConduitSize)
+            } catch (e: Exception) {
+                Log.e("ConduitFillVM", "Error fetching conduit entry", e)
+                _uiState.update { it.copy(errorMessage = "Error fetching conduit data: ${e.message}") }
+                return@launch
             }
-            // Fetch conduit area from repository
-            val conduitEntry = necDataRepository.getConduitEntry(uiState.selectedConduitTypeName, uiState.selectedConduitSize)
-            // Use internalAreaSqIn directly as it represents the full area
+
             val conduitArea = conduitEntry?.internalAreaSqIn
 
             if (conduitArea == null || conduitArea <= 0) {
-                uiState = uiState.copy(errorMessage = "Conduit properties not found or invalid area.", totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false)
+                Log.w("ConduitFillVM", "Conduit properties not found or invalid area for ${currentState.selectedConduitTypeName} ${currentState.selectedConduitSize}")
+                _uiState.update { it.copy(errorMessage = "Conduit properties not found or invalid area.", totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) }
                 return@launch
             }
 
             var currentTotalWireArea = 0.0
             var totalWireCount = 0
             var calculationPossible = true
-            var errorMsg: String? = null
+             var errorMsg: String? = null
 
-            if (uiState.wireEntries.isEmpty()){
-                 uiState = uiState.copy(totalWireArea = 0.0, allowableFillArea = conduitArea * 0.4, fillPercentage = 0.0, isOverfill = false, errorMessage = null) // Default to 40% allowable if empty
-                 return@launch
-            }
+             if (currentState.wireEntries.isEmpty()) {
+                 // Log.d("ConduitFillVM", "No wire entries, setting fill to 0.") // Removed Log
+                  _uiState.update { it.copy(totalWireArea = 0.0, allowableFillArea = conduitArea * 0.4, fillPercentage = 0.0, isOverfill = false, errorMessage = null) } // Default to 40% allowable if empty
+                  return@launch
+             }
 
-            // Fetch wire areas asynchronously
-            for (entry in uiState.wireEntries) {
+            // Fetch wire areas asynchronously (can be optimized further if needed)
+            for (entry in currentState.wireEntries) {
                  if (entry.type.isBlank() || entry.size.isBlank()) {
                      errorMsg = "Select wire type and size for all entries."
                      calculationPossible = false
                      break
                  }
-                val wireAreaEntry = necDataRepository.getWireAreaEntry(entry.type, entry.size)
+                 val wireAreaEntry = try {
+                     necDataRepository.getWireAreaEntry(entry.type, entry.size)
+                 } catch (e: Exception) {
+                     Log.e("ConduitFillVM", "Error fetching wire area for ${entry.type} ${entry.size}", e)
+                     errorMsg = "Error fetching wire data for ${entry.type} ${entry.size}"
+                     calculationPossible = false
+                     break
+                 }
+
                 if (wireAreaEntry == null) {
                     errorMsg = "Wire area not found for: ${entry.type} ${entry.size}"
                     calculationPossible = false
@@ -220,35 +281,39 @@ class ConduitFillViewModel @Inject constructor(
 
 
             if (!calculationPossible) {
-                uiState = uiState.copy(errorMessage = errorMsg, totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false)
+                // Log.w("ConduitFillVM", "Calculation not possible: $errorMsg") // Keep warning log for now, maybe remove later
+                _uiState.update { it.copy(errorMessage = errorMsg, totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) }
                 return@launch
             }
 
             // Determine allowable fill percentage (NEC Chapter 9, Table 1)
-            // Use specific fill areas from conduit entry if available and valid
             val allowablePercentDecimal = when {
                 totalWireCount == 1 && conduitEntry.fillArea1WireSqIn > 0 -> conduitEntry.fillArea1WireSqIn / conduitArea
                 totalWireCount == 2 && conduitEntry.fillArea2WiresSqIn > 0 -> conduitEntry.fillArea2WiresSqIn / conduitArea
                 totalWireCount > 2 && conduitEntry.fillAreaOver2WiresSqIn > 0 -> conduitEntry.fillAreaOver2WiresSqIn / conduitArea
-                // Fallback percentages if specific areas aren't available/valid
+                // Fallback percentages
                 totalWireCount == 1 -> 0.53
                 totalWireCount == 2 -> 0.31
                 totalWireCount > 2 -> 0.40
-                else -> 0.0 // Should not happen if wireEntries is checked
+                else -> 0.40 // Default to 40% if count is 0 (though handled above)
             }
 
             val allowableArea = conduitArea * allowablePercentDecimal
-            val percentage = if (conduitArea > 0) (currentTotalWireArea / conduitArea) * 100 else 0.0
-            val overfill = currentTotalWireArea > allowableArea
+            val percentage = if (allowableArea > 0) (currentTotalWireArea / allowableArea) * 100 else 0.0 // Calculate % of allowable area
+             val overfill = currentTotalWireArea > allowableArea
 
-            uiState = uiState.copy(
-                totalWireArea = currentTotalWireArea,
-                allowableFillArea = allowableArea,
-                fillPercentage = percentage,
-                isOverfill = overfill,
-                errorMessage = null // Clear error if calculation succeeds
-            )
-         }
+             // Log.d("ConduitFillVM", "Calculation Result: TotalArea=$currentTotalWireArea, AllowableArea=$allowableArea, Percentage=$percentage, Overfill=$overfill") // Removed Log
+
+             _uiState.update {
+                 it.copy(
+                    totalWireArea = currentTotalWireArea,
+                    allowableFillArea = allowableArea,
+                    fillPercentage = percentage,
+                    isOverfill = overfill,
+                    errorMessage = null // Clear error if calculation succeeds
+                )
+            }
+        }
     }
 
     // Removed local formatResult helper - use shared one from common package

@@ -13,7 +13,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage // Use coil3 import path
+import coil.compose.AsyncImage // Correct import
 // import coil3.request.ImageRequest // Removed as unused
 // import coil3.compose.LocalPlatformContext // Removed as unused
 import com.example.electricianappnew.ui.photodoc.viewmodel.AddEditPhotoDocViewModel

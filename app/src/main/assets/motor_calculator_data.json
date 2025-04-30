@@ -1,0 +1,29 @@
+{
+  "single_phase_flc": [
+    { "hp": 0.5,  "volts115": 9.8,  "volts230": 4.9  },
+    { "hp": 1.0,  "volts115": 16.0, "volts230": 8.0  },
+    { "hp": 2.0,  "volts115": 24.0, "volts230": 12.0 },
+    { "hp": 5.0,  "volts115": 56.0, "volts230": 28.0 }
+  ],
+  "three_phase_flc": [
+    { "hp": 0.5,  "volts200": 2.5,  "volts208": 2.4,  "volts230": 2.2,  "volts460": 1.1,  "volts575": 0.9 },
+    { "hp": 1.0,  "volts200": 4.6,  "volts208": 4.4,  "volts230": 4.0,  "volts460": 2.0,  "volts575": 1.6 },
+    { "hp": 5.0,  "volts200": 15.2, "volts208": 14.4, "volts230": 14.0, "volts460": 7.6,  "volts575": 6.4 },
+    { "hp": 10.0, "volts200": 28.0, "volts208": 27.0, "volts230": 26.0, "volts460": 14.0, "volts575": 11.5 }
+  ],
+  "motor_protection_percentages": [
+    { "type": "Non-Time Delay Fuse", "percentage": 300.0 },
+    { "type": "Time Delay Fuse",     "percentage": 175.0 },
+    { "type": "Inverse Time Breaker","percentage": 250.0 }
+  ],
+  "motor_protection_nontime_delay_fuse": [
+    { "hp": 0.5,  "volts": 115, "amps": 9.8,  "maxFuse": 30.0 },
+    { "hp": 1.0,  "volts": 115, "amps": 16.0, "maxFuse": 50.0 },
+    { "hp": 5.0,  "volts": 230, "amps": 28.0, "maxFuse": 125.0 }
+  ],
+  "motor_protection_time_delay_fuse": [
+    { "hp": 0.5,  "volts": 115, "amps": 9.8,  "maxFuse": 15.0 },
+    { "hp": 1.0,  "volts": 115, "amps": 16.0, "maxFuse": 20.0 },
+    { "hp": 5.0,  "volts": 230, "amps": 28.0, "maxFuse": 40.0 }
+  ]
+}

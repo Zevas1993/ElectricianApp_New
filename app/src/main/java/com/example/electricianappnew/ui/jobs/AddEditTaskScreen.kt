@@ -216,8 +216,7 @@ fun AddMaterialDropdown(
                 label = { Text("Select Material to Add") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth() // Removed .menuAnchor()
             )
 
             ExposedDropdownMenu(

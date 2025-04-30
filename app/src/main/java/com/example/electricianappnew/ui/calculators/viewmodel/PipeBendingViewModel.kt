@@ -3,20 +3,25 @@ package com.example.electricianappnew.ui.calculators.viewmodel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope // Import viewModelScope
 import com.example.electricianappnew.ui.calculators.BendType // Assuming BendType enum is in the Screen file or common location
 import com.example.electricianappnew.ui.calculators.PipeBendingData // Assuming data object is accessible
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted // Import SharingStarted
+import kotlinx.coroutines.flow.StateFlow // Import StateFlow
+import kotlinx.coroutines.flow.flowOf // Import flowOf
+import kotlinx.coroutines.flow.stateIn // Import stateIn
 import javax.inject.Inject
 import kotlin.math.* // Import math functions including PI
 
 // Define the UI State data class based on UI needs
 data class PipeBendingUiState(
-    val bendTypes: List<BendType> = BendType.values().toList(),
+    // Dropdown lists removed from state, now in ViewModel
     val selectedBendType: BendType = BendType.Offset,
-    val commonAngles: List<Double> = listOf(10.0, 22.5, 30.0, 45.0, 60.0), // Example angles
     val selectedAngleStr: String = "30.0", // Default angle as String
-    val conduitSizes: List<String> = listOf("1/2\"", "3/4\"", "1\"", "1 1/4\"", "1 1/2\"", "2\""), // Example sizes
     val conduitSizeStr: String = "1/2\"", // Default size
     val offsetDepthStr: String = "",
     val saddleDepthStr: String = "", // Used for 3-point and 4-point obstacle height
@@ -35,8 +40,39 @@ data class PipeBendingUiState(
 @HiltViewModel
 class PipeBendingViewModel @Inject constructor() : ViewModel() {
 
+    // --- StateFlows for Dropdown Options ---
+    val bendTypes: StateFlow<List<BendType>> = flowOf(BendType.values().toList())
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = BendType.values().toList()
+        )
+
+    val commonAngles: StateFlow<List<Double>> = flowOf(listOf(10.0, 22.5, 30.0, 45.0, 60.0))
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = listOf(10.0, 22.5, 30.0, 45.0, 60.0)
+        )
+
+    val conduitSizes: StateFlow<List<String>> = flowOf(listOf("1/2\"", "3/4\"", "1\"", "1 1/4\"", "1 1/2\"", "2\""))
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = listOf("1/2\"", "3/4\"", "1\"", "1 1/4\"", "1 1/2\"", "2\"")
+        )
+
     var uiState by mutableStateOf(PipeBendingUiState())
         private set
+
+    // Initialize default selections based on StateFlow initial values
+    init {
+        uiState = uiState.copy(
+            selectedBendType = bendTypes.value.firstOrNull() ?: BendType.Offset,
+            selectedAngleStr = commonAngles.value.firstOrNull { it == 30.0 }?.toString() ?: commonAngles.value.firstOrNull()?.toString() ?: "30.0",
+            conduitSizeStr = conduitSizes.value.firstOrNull { it == "1/2\"" } ?: conduitSizes.value.firstOrNull() ?: "1/2\""
+        )
+    }
 
     // --- Input Change Handlers ---
 
@@ -77,7 +113,13 @@ class PipeBendingViewModel @Inject constructor() : ViewModel() {
 
 
     fun clearInputs() {
-        uiState = PipeBendingUiState() // Reset to default state
+        // Reset state using current StateFlow values
+        uiState = PipeBendingUiState(
+            selectedBendType = bendTypes.value.firstOrNull() ?: BendType.Offset, // Use StateFlow value
+            selectedAngleStr = commonAngles.value.firstOrNull { it == 30.0 }?.toString() ?: commonAngles.value.firstOrNull()?.toString() ?: "30.0", // Use StateFlow value
+            conduitSizeStr = conduitSizes.value.firstOrNull { it == "1/2\"" } ?: conduitSizes.value.firstOrNull() ?: "1/2\"" // Use StateFlow value
+        )
+        // Calculation will be triggered by state change if necessary
     }
 
     // --- Calculation Logic ---

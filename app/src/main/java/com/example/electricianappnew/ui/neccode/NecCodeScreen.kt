@@ -13,15 +13,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.electricianappnew.data.model.* // Import models including NecSearchResult implementations
+import com.example.electricianappnew.navigation.Screen // Import Screen object for routes
 import com.example.electricianappnew.ui.neccode.viewmodel.NecCodeViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NecCodeScreen(
     modifier: Modifier = Modifier,
-    viewModel: NecCodeViewModel = hiltViewModel()
+    viewModel: NecCodeViewModel = hiltViewModel(),
+    navController: NavController? = null // Add optional NavController
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -35,8 +39,26 @@ fun NecCodeScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp)) // Reduced space
 
+        // --- Navigation Buttons ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = { navController?.navigate(Screen.CircuitColorReference.route) }) {
+                Text("Colors")
+            }
+            Button(onClick = { navController?.navigate(Screen.ElectricalFormulas.route) }) {
+                Text("Formulas")
+            }
+            Button(onClick = { navController?.navigate(Screen.ElectricalSymbols.route) }) {
+                Text("Symbols")
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp)) // Space before search
+
+        // --- Search Input ---
         OutlinedTextField(
             value = uiState.searchQuery,
             onValueChange = viewModel::onSearchQueryChanged, // Trigger search on change
@@ -109,6 +131,14 @@ fun SearchResultItem(result: NecSearchResult) {
                 Text(result.title, style = MaterialTheme.typography.titleMedium)
                 Text(result.details, style = MaterialTheme.typography.bodyMedium)
             }
+            is NecSearchResult.FullCodeResult -> { // Added case for full code results
+                Text(result.title, style = MaterialTheme.typography.titleMedium) // Title includes section & article
+                Text(result.details, style = MaterialTheme.typography.bodyMedium) // Details is the section text
+            }
+            is NecSearchResult.ConductorImpedanceResult -> { // Added case for conductor impedance results
+                Text(result.title, style = MaterialTheme.typography.titleMedium)
+                Text(result.details, style = MaterialTheme.typography.bodyMedium)
+            }
             // Add cases for other result types here later
         }
     }
@@ -133,6 +163,6 @@ fun SearchResultItem(result: NecSearchResult) {
 fun NecCodeScreenPreview() {
     ElectricianAppNewTheme {
         // Preview will show initial empty state or require a mock ViewModel
-        NecCodeScreen()
+        NecCodeScreen() // Preview doesn't need NavController
     }
 }

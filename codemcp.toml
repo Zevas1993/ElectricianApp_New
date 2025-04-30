@@ -1,4 +1,4 @@
-# Configuration for the ezyang/codemcp server
+2# Configuration for the ezyang/codemcp server
 # Add project-specific details and commands below
 
 project_prompt = """
@@ -11,3 +11,9 @@ Please help with coding tasks related to this project.
 format = ["./gradlew", "ktlintFormat"]
 test = ["./gradlew", "testDebugUnitTest"]
 build = ["./gradlew", "assembleDebug"]
+
+# Added Upstash Context7 server
+[[servers]]
+name = "github.com/upstash/context7"
+path = "C:\\Users\\Chris Boyd\\Documents\\Cline\\MCP\\context7"
+command = ["node", "dist/index.js"]

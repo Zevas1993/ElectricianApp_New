@@ -93,8 +93,6 @@ fun BoxFillScreen(
 
                 item {
                     Text("Other Allowances:", style = MaterialTheme.typography.titleMedium)
-                    CountInputRow(label = "Cable Clamps", count = uiState.numClampsStr, onCountChange = viewModel::onClampCountChange) // Access property of uiState
-                    CountInputRow(label = "Support Fittings (Studs/Hickeys)", count = uiState.numSupportFittingsStr, onCountChange = viewModel::onSupportFittingCountChange) // Access property of uiState
                     CountInputRow(label = "Devices (Yokes/Straps)", count = uiState.numDevicesStr, onCountChange = viewModel::onDeviceCountChange) // Access property of uiState
                 }
 

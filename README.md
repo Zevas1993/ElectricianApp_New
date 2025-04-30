@@ -1,165 +1,63 @@
-# Electrician App New (Android Native - Kotlin/Compose)
+# ElectricianApp_New
 
-This project is a complete rebuild of the Electrician App, developed using native Android with Kotlin and Jetpack Compose.
+This is a comprehensive mobile application for electricians, built using Kotlin and Jetpack Compose. It provides various tools and resources to assist with daily tasks, including calculators, inventory management, job tracking, photo documentation, and NEC code lookups.
 
-## Current Status (as of 2025-04-17 ~08:00 AM ET)
+## Features
 
-The foundational structure of the application has been established, and key features are implemented:
+*   **Calculators:** A suite of electrical calculators for common tasks (e.g., Wire Ampacity, Voltage Drop, Box Fill, Conduit Fill, Motor Calculations, Ohms Law, Pipe Bending, Fault Current, Transformer Sizing, Dwelling Load, Series/Parallel Resistance, Luminaire Layout).
+*   **Inventory Management:** Track materials and inventory items.
+*   **Job Tracking:** Manage jobs, tasks, and associated details.
+*   **Photo Documentation:** Capture and organize photos related to jobs or inventory.
+*   **NEC Code Reference:** Look up NEC code sections and tables.
 
-1.  **Project Setup:**
-    *   Gradle configured with specified versions (AGP 8.2.2, Gradle 8.13.0, Kotlin 2.0.0).
-    *   Basic Android Manifest, resources (strings, colors, themes), and `.gitignore`.
-    *   `gradle.properties` created with `android.useAndroidX=true` and increased JVM heap size (`org.gradle.jvmargs=-Xmx4g`).
-    *   Placeholder launcher icons created (`drawable/ic_launcher.xml`, `drawable/ic_launcher_round.xml`) and referenced in `AndroidManifest.xml`.
-    *   XML theme updated to inherit from `Theme.Material3.DayNight` and remove deprecated attributes.
-2.  **Core Architecture:**
-    *   **Dependency Injection:** Hilt is set up (`ElectricianApp`, `DatabaseModule`, build file configurations).
-    *   **Data Persistence:** Room is set up.
-        *   Entities defined for: `Job`, `Task`, `PhotoDoc`, `Material`, `InventoryItem`, `InventoryTransaction`, `Client`, and various `NecData` tables.
-        *   DAOs created for all entities.
-        *   `AppDatabase` class defined, linking all entities and DAOs.
-        *   `DateConverter` created for Room.
-        *   Mechanism for pre-populating NEC data from `assets/nec_data.json` using a `RoomDatabase.Callback` is implemented.
-    *   **Repository Pattern:** Interfaces and Implementations created for `JobTaskRepository`, `PhotoDocRepository`, `InventoryRepository`, `ClientRepository`, and `NecDataRepository`. Hilt module updated to provide these.
-3.  **UI & Navigation:**
-    *   Jetpack Navigation Compose is set up in `MainActivity.kt`.
-    *   A dashboard structure (`DashboardScreen`) is implemented as the main entry point.
-    *   Placeholder screens created for all planned features up to Phase 7.
-    *   Navigation routes defined and implemented to access all these screens from the dashboard or relevant parent screens.
-    *   Shared UI components (`ExposedDropdownMenuBoxInput`, `NumberInputField`) created in `ui/common`.
-4.  **ViewModel Integration:**
-    *   ViewModels created for all 13 calculators.
-    *   All calculator screens refactored to use their respective ViewModels via `hiltViewModel()`.
-    *   ViewModels updated to inject and use `NecDataRepository` where applicable (e.g., `WireAmpacityViewModel`, `VoltageDropViewModel`, `BoxFillViewModel`, `ConduitFillViewModel`, `RacewaySizingViewModel`). *Note: Some calculation logic still uses placeholders pending repository updates.*
-5.  **Build Configuration:**
-    *   Troubleshooting ongoing Gradle build issues related to KSP plugin resolution. Persistently unable to resolve KSP `1.0.30` or `2.1.0-1.0.9` despite adding the JetBrains KSP repository and clearing caches.
-    *   Currently configured to use manually installed Gradle 8.13.
-    *   Android Studio Gradle JDK setting aligned with `JAVA_HOME`.
-    *   KSP version (`2.0.0-1.0.21`) defined in `settings.gradle` (`pluginManagement`).
-    *   JetBrains KSP repository added to `settings.gradle` (`pluginManagement.repositories`).
-    *   KSP plugin applied by ID only in `app/build.gradle`.
-    *   Root `build.gradle` cleaned up (no buildscript block, no plugin versions).
-6.  **Build Troubleshooting & Fixes (2025-04-13):**
-    *   Regenerated missing Gradle wrapper scripts (`gradlew.bat`, `gradlew`).
-    *   Updated `app/build.gradle`:
-        *   Set Compose BOM to `2024.06.00`.
-        *   Set Kotlin `jvmTarget` to `17`.
-        *   Added Coil dependency (`io.coil-kt:coil-compose:2.6.0`).
-    *   Fixed various Kotlin compilation errors:
-        *   Corrected `Icons.Default.AddAPhoto` to `Icons.Filled.AddAPhoto` in `PhotoDocListScreen.kt`.
-        *   Added missing `KeyboardType.Companion.NumberDecimal` imports in multiple calculator screens and `AddEditMaterialScreen.kt`.
-        *   Resolved `LocalContentColor` import ambiguity in `ConduitFillScreen.kt`.
-        *   Added missing imports (`LocalContentColor`, `hiltViewModel`, `Preview`, `ElectricianAppNewTheme`) and `@Composable` annotation in `ConduitFillScreen.kt`.
-    *   Resolved persistent Hilt/Javapoet build error (`NoSuchMethodError: 'java.lang.String com.squareup.javapoet.ClassName.canonicalName()'`) by downgrading Hilt plugin and dependencies to `2.44.2`.
-    *   Resolved Coil 3 build errors by ensuring correct dependencies (`coil`, `coil-compose`, `coil-network-okhttp`, `okhttp`) and imports (`coil3...`) were used, and temporarily removing the `.crossfade(true)` call from `ImageRequest.Builder` for diagnostic purposes.
+## Development Status
 
-## Current Working Configuration (2025-04-14 ~10:57 PM ET)
+*   **Luminaire Layout Calculator:** The Luminaire Layout calculator has undergone a significant workover and is now complete. It implements the Lumen Method, calculates RCR and CU, and provides a recommended grid layout with offsets and spacing, including a visual diagram.
+*   **NEC Data Expansion:** The application is in the process of expanding its integrated NEC data. Initially planned for a single JSON file, the approach has been revised to use separate JSON files for the specific NEC data required by each calculator. This data is loaded into a Room database for efficient access.
 
-This configuration successfully builds (`.\gradlew assembleDebug`).
+## NEC Data Structure
 
-*   **Plugins (`settings.gradle`):**
-    *   AGP (Application & Library): `8.9.1`
-    *   Kotlin Android: `2.1.10`
-    *   KSP: `2.1.10-1.0.31`
-    *   Hilt Android: `2.44.2` (Downgraded from 2.56.1 to resolve build error)
-    *   Kotlin Compose Plugin: `2.1.10`
-*   **Libraries & Settings (`app/build.gradle`):**
-    *   `compileSdk`: 36
-    *   `targetSdk`: 36
-    *   `minSdk`: 26
-    *   `jvmTarget`: '17'
-    *   `core-ktx`: 1.16.0
-    *   `lifecycle-runtime-ktx`: 2.8.7
-    *   `lifecycle-runtime-compose`: 2.8.7
-    *   `activity-compose`: 1.10.1
-    *   `material`: 1.12.0
-    *   `compose-bom`: 2025.04.00
-    *   `navigation-compose`: 2.8.9
-    *   `room_version`: 2.7.0 (using KSP)
-    *   `hilt-android`: 2.44.2 (using KSP)
-    *   `hilt-compiler`: 2.44.2 (using KSP)
-    *   `hilt-navigation-compose`: 1.2.0
-    *   `gson`: 2.13.0
-    *   `coil`: 3.1.0
-    *   `coil-compose`: 3.1.0
-    *   `coil-network-okhttp`: 3.1.0
-    *   `okhttp`: 4.12.0
+NEC data is stored in the `app/src/main/assets/` directory in separate JSON files, categorized by the calculator or function that primarily uses the data. This approach improves organization and allows for more targeted data loading.
 
-## Implemented Features (Phase 1)
+Current NEC data files include:
 
-*   **Calculators:**
-    *   Conduit Fill: Logic implemented using NEC Chapter 9 Tables 1, 4, and 5 data fetched from the database. Dropdowns populated dynamically.
-    *   Wire Ampacity: Logic implemented using NEC Table 310.16, temperature correction factors, conductor adjustment factors, and termination limits (110.14(C)) fetched/calculated from the database. Dropdowns populated dynamically.
-    *   Voltage Drop: Logic implemented using NEC Chapter 9 Table 8 resistance values fetched from the database. Dropdowns populated dynamically.
-    *   Box Fill: Logic implemented using NEC 314.16(B) volume allowances fetched from the database. UI updated for detailed input.
-    *   Dwelling Load (Standard Method): Logic implemented using NEC Article 220 rules and demand factors. UI updated for detailed input. (Note: Range demand uses Table 220.55 Col C & Note 1; multi-range/other notes not yet implemented).
-    *   Raceway Sizing: Logic implemented using NEC Chapter 9 Tables 1, 4, and 5 data fetched from the database to determine minimum required raceway size. UI updated for multiple wire entries.
-    *   Motor Calculator: Logic implemented using NEC Article 430 (Tables 430.248/250 for FLC, 430.52 for protection, 430.32 for overloads, 430.22 for conductors). UI updated for detailed input.
-    *   Transformer Sizing: Logic implemented using NEC Article 450 rules for kVA, FLA, and OCPD sizing. UI updated for detailed input.
-    *   Ohm's Law: Logic implemented for V=IR and P=VI calculations. UI allows selecting variable to solve for.
-    *   Series/Parallel Resistance: Logic implemented for calculating total resistance. UI allows adding/removing multiple resistor values.
-    *   Pipe Bending: Logic implemented for Offset, 3-Point Saddle, 90-Degree Stub, and 4-Point Saddle. Uses hardcoded bending constants (gain values approximated). UI updated for 4-point inputs.
-    *   Luminaire Layout (Lumen Method): Logic implemented using Zonal Cavity method. Requires user input for CU. UI updated for detailed input.
-    *   Fault Current (Transformer Impedance Method): Logic implemented to calculate FLA and AFC based on kVA, voltage, and %Z. UI updated.
-    *   **UI Refactoring (All Calculators):** Successfully refactored all 13 calculator screens (`app/src/main/java/com/example/electricianappnew/ui/calculators/`) to use Jetpack Compose `Scaffold` and `TopAppBar`. Consolidated common UI components (`CalculationResultRow`, `InputSectionHeader`, `LoadInputRow`, `WireInputRow`, `ResistanceInputRow`) and helper functions (`formatCalculationResult`) into `app/src/main/java/com/example/electricianappnew/ui/common/SharedComponents.kt`. Centralized `WireEntry` data class in `app/src/main/java/com/example/electricianappnew/data/model/CalculatorModels.kt`. Resolved associated compilation errors. Build is currently stable.
-*   **Inventory Management:**
-    *   Data models (`Material`, `InventoryItem`, `InventoryTransaction`, `InventoryItemWithMaterial`) created.
-    *   `InventoryDao` and `InventoryRepository` created with necessary CRUD methods.
-    *   ViewModels (`InventoryListViewModel`, `InventoryDetailViewModel`, `AddEditMaterialViewModel`) created and integrated with UI.
-    *   ViewModels (`InventoryListViewModel`, `InventoryDetailViewModel`, `AddEditMaterialViewModel`) created and integrated with UI.
-    *   UI Screens (`InventoryListScreen`, `InventoryDetailScreen`, `AddEditMaterialScreen`) updated to use ViewModels and display data.
-    *   Delete functionality added to `InventoryListScreen`.
-    *   Stock adjustment logic implemented in `InventoryDetailViewModel` and UI added in `InventoryDetailScreen`.
-*   **Client Management:**
-    *   ViewModels (`ClientListViewModel`, `AddEditClientViewModel`) created and integrated with UI.
-    *   UI Screens (`ClientListScreen`, `AddEditClientScreen`) updated to use ViewModels and display/save data.
-    *   Delete functionality added to `ClientListScreen`.
-*   **Job & Task Management:**
-    *   Data model updated to include `clientId` in `Job`.
-    *   ViewModels (`JobListViewModel`, `JobDetailViewModel`, `AddEditJobViewModel`, `AddEditTaskViewModel`) created and integrated with UI.
-    *   UI Screens (`JobListScreen`, `JobDetailScreen`, `AddEditJobScreen`, `AddEditTaskScreen`) updated to use ViewModels and display/save data.
-    *   Delete functionality added to `JobListScreen` (for Jobs) and `JobDetailScreen` (for Tasks).
-    *   Task status update logic implemented in `JobDetailViewModel` and UI added in `JobDetailScreen`.
-    *   Inventory usage integration added to `AddEditTaskViewModel` and `AddEditTaskScreen`.
-*   **Photo Documentation (Basic):**
-    *   Data model (`PhotoDoc`), DAO (`PhotoDocDao`), and Repository (`PhotoDocRepository`) created.
-    *   ViewModels (`PhotoDocListViewModel`, `AddEditPhotoDocViewModel`) created.
-    *   UI Screens (`PhotoDocListScreen`, `AddEditPhotoDocScreen`) created for listing and adding photos (linked to Jobs).
+*   `wire_ampacity_data.json`: Contains data for Wire Ampacity calculations (primarily NEC Table 310.16, 310.15(B), 310.15(C)).
+*   `voltage_drop_data.json`: Contains data for Voltage Drop calculations (primarily NEC Table 8, Table 9).
+*   `box_fill_data.json`: Contains data for Box Fill calculations (primarily NEC Table 314.16(B)).
+*   `conduit_fill_data.json`: Contains data for Conduit Fill calculations (primarily NEC Table 4, Table 5).
+*   `raceway_sizing_data.json`: Contains data for Raceway Sizing calculations (primarily NEC Table 4, Table 5).
+*   `motor_calculator_data.json`: Contains data for Motor Calculations (primarily NEC Tables 430.248, 430.250, Table 430.52).
 
-## Immediate Next Steps (Plan as of 2025-04-17)
+This data is loaded into the Room database on application startup (or database migration) via `DatabaseCallback.kt` and accessed through `NecDataDao.kt` and `NecDataRepository.kt`.
 
-1.  **Add Reference Tools:**
-    *   Create a simple screen for standard Circuit Color references (`CircuitColorReferenceScreen.kt`).
-    *   Add a section or screen for common Electrical Formulas (`ElectricalFormulasScreen.kt`).
-    *   Add a section or screen for common Electrical Symbols (`ElectricalSymbolsScreen.kt`).
-2.  **UI/UX Polish & Testing:** Address any remaining UI inconsistencies, improve error messages/loading states, and perform thorough testing.
-3.  **Refine Core Features:**
-    *   **Photo Documentation:** Enhance linking (allow linking to Tasks), add a detail view, improve image handling.
-    *   **Inventory Usage:** Refine insufficient stock logic and potentially allow editing used quantities on tasks.
-4.  **Implement Search/Filtering:** Add search capabilities to Job, Client, and Inventory list screens.
-5.  **Implement NEC Code Lookup:** Build out the `NecCodeScreen.kt` to effectively search and display the data from `assets/nec_data.json`. (Reverted initial attempt, needs careful re-implementation).
+## Technologies Used
 
+*   Kotlin
+*   Jetpack Compose
+*   Android Architecture Components (ViewModel, Room Database)
+*   Dependency Injection (Hilt)
+*   Gson (for JSON parsing)
 
-## Future Features / Roadmap
+## Setup and Installation
 
-### AR Wiring Visualization (Deferred)
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/ChrisBoyd/ElectricianApp_New.git
+    ```
+2.  Open the project in Android Studio.
+3.  Ensure you have the necessary Android SDKs and build tools installed.
+4.  Sync the project with Gradle files.
+5.  Populate the JSON files in `app/src/main/assets/` with the required NEC data.
+6.  Build and run the application on an emulator or physical device.
 
-**Goal:** Visualize planned electrical wiring/conduit paths overlaid on the real-world camera view, anchored to detected surfaces.
+## Contributing
 
-**Detailed Plan:**
+Contributions are welcome! Please feel free to submit issues or pull requests.
 
-1.  **Technology Stack:** Android ARCore, Kotlin, Jetpack Compose, SceneView library (recommended for Compose integration).
-2.  **Setup & Configuration:** Add dependencies (ARCore, SceneView), configure Manifest (permissions, AR Optional), implement compatibility checks.
-3.  **UI/UX Flow:** Dedicated AR screen (`ARWiringScreen`) launched from Job/Task details. Detect planes, allow user taps to place anchors, render path in real-time. UI for save/clear/exit.
-4.  **Data Modeling:** New `WiringPath` entity (Room) linked to Job/Task, storing anchor data (e.g., JSON of poses). Add DAO/Repository methods.
-5.  **AR Screen Implementation:** Use `SceneView` composable, manage ARCore `Session` lifecycle, handle plane detection and user taps (`HitResult`) to create `Anchor` objects.
-6.  **ViewModel (`ARWiringViewModel`):** Manage AR state, handle taps, create/retrieve anchors, manage `WiringPath` data (saving/loading), expose data to UI.
-7.  **Rendering Logic:** Use `SceneView` API. Load simple 3D model (e.g., cylinder). For each path segment, calculate position/scale/rotation between anchors and transform the model instance (`ModelNode`).
-8.  **Challenges:** Compose/AR integration, 3D math, UX for point placement, performance, tracking accuracy, data persistence (Cloud Anchors?).
-9.  **Phased Implementation:**
-    *   Phase 1: Core Setup (Deps, Perms, Basic Screen, Plane Detect, Anchor Place).
-    *   Phase 2: Line Rendering (Load model, render single segment).
-    *   Phase 3: Path Data (Model/DAO/Repo, Multi-point paths, Save/Load, Render full path).
-    *   Phase 4: Refinement (UX, Edit/Delete, Optimize, Cloud Anchors?).
+## License
 
-*(Other previously considered features like Estimating, Invoicing, Time Tracking, Reporting, User Management are deferred further.)*
+[Specify your license here, e.g., MIT, Apache 2.0]
+
+## Contact
+
+[Your Contact Information]

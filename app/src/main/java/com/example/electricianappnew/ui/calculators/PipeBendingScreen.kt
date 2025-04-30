@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons // Add import for Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack // Add import for Back Arrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // Add this import
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType // Ensure KeyboardType is imported
@@ -79,6 +80,11 @@ fun PipeBendingScreen(
     navController: NavController // Add NavController parameter
 ) {
     val uiState = viewModel.uiState // Observe state
+    // Collect StateFlows from ViewModel
+    val bendTypes by viewModel.bendTypes.collectAsStateWithLifecycle()
+    val commonAngles by viewModel.commonAngles.collectAsStateWithLifecycle()
+    val conduitSizes by viewModel.conduitSizes.collectAsStateWithLifecycle()
+
     val scrollState = rememberScrollState() // Add scroll state
 
     Scaffold(
@@ -110,31 +116,34 @@ fun PipeBendingScreen(
             // Inputs
             ExposedDropdownMenuBoxInput(
                 label = "Bend Type",
-                options = uiState.bendTypes.map { it.name }, // Display enum names
-                selectedOption = uiState.selectedBendType.name,
-                onOptionSelected = { viewModel.onBendTypeChange(BendType.valueOf(it)) }, // Convert back to enum
-                modifier = Modifier.fillMaxWidth()
-            )
+                options = bendTypes.map { it.name }, // Use collected state
+                 selectedOption = uiState.selectedBendType.name,
+                 onOptionSelected = { viewModel.onBendTypeChange(BendType.valueOf(it)) }, // Convert back to enum
+                 modifier = Modifier.fillMaxWidth()
+                 // Removed zIndex
+             )
             Spacer(modifier = Modifier.height(8.dp))
 
             if (uiState.selectedBendType != BendType.NinetyDegreeStub) {
                  ExposedDropdownMenuBoxInput(
                      label = "Angle (°)",
-                     options = uiState.commonAngles.map { it.toString() }, // Convert Double to String for options
-                     selectedOption = uiState.selectedAngleStr,
-                     onOptionSelected = viewModel::onAngleChange,
-                     modifier = Modifier.fillMaxWidth()
-                 )
+                     options = commonAngles.map { it.toString() }, // Use collected state
+                      selectedOption = uiState.selectedAngleStr,
+                      onOptionSelected = viewModel::onAngleChange,
+                      modifier = Modifier.fillMaxWidth()
+                      // Removed zIndex
+                  )
                  Spacer(modifier = Modifier.height(8.dp))
             }
 
              ExposedDropdownMenuBoxInput(
                  label = "Conduit Size",
-                 options = uiState.conduitSizes,
-                 selectedOption = uiState.conduitSizeStr,
-                 onOptionSelected = viewModel::onConduitSizeChange,
-                 modifier = Modifier.fillMaxWidth()
-             )
+                 options = conduitSizes, // Use collected state
+                  selectedOption = uiState.conduitSizeStr,
+                  onOptionSelected = viewModel::onConduitSizeChange,
+                  modifier = Modifier.fillMaxWidth()
+                  // Removed zIndex
+              )
              Spacer(modifier = Modifier.height(8.dp))
 
             // Ensure OutlinedTextField calls have correct parameters and label structure

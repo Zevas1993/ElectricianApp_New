@@ -1,0 +1,1212 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 39,
+    "identityHash": "ef888aae90430266702e8223d561fe92",
+    "entities": [
+      {
+        "tableName": "jobs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `job_name` TEXT NOT NULL, `client_id` TEXT NOT NULL, `client_name` TEXT NOT NULL, `address` TEXT NOT NULL, `description` TEXT NOT NULL, `status` TEXT NOT NULL, `date_created` INTEGER NOT NULL, `date_updated` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`client_id`) REFERENCES `clients`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jobName",
+            "columnName": "job_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientId",
+            "columnName": "client_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientName",
+            "columnName": "client_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateCreated",
+            "columnName": "date_created",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateUpdated",
+            "columnName": "date_updated",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_jobs_client_id",
+            "unique": false,
+            "columnNames": [
+              "client_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_jobs_client_id` ON `${TABLE_NAME}` (`client_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "clients",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "client_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "tasks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `job_id` TEXT NOT NULL, `description` TEXT NOT NULL, `status` TEXT NOT NULL, `assigned_to` TEXT NOT NULL, `date_created` INTEGER NOT NULL, `date_completed` INTEGER, PRIMARY KEY(`id`), FOREIGN KEY(`job_id`) REFERENCES `jobs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jobId",
+            "columnName": "job_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "assignedTo",
+            "columnName": "assigned_to",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateCreated",
+            "columnName": "date_created",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateCompleted",
+            "columnName": "date_completed",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tasks_job_id",
+            "unique": false,
+            "columnNames": [
+              "job_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tasks_job_id` ON `${TABLE_NAME}` (`job_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "jobs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "job_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "photo_docs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `file_path` TEXT NOT NULL, `caption` TEXT NOT NULL, `date_taken` INTEGER NOT NULL, `job_id` TEXT, `task_id` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`job_id`) REFERENCES `jobs`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`task_id`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filePath",
+            "columnName": "file_path",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caption",
+            "columnName": "caption",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dateTaken",
+            "columnName": "date_taken",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "jobId",
+            "columnName": "job_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "taskId",
+            "columnName": "task_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_photo_docs_job_id",
+            "unique": false,
+            "columnNames": [
+              "job_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photo_docs_job_id` ON `${TABLE_NAME}` (`job_id`)"
+          },
+          {
+            "name": "index_photo_docs_task_id",
+            "unique": false,
+            "columnNames": [
+              "task_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_photo_docs_task_id` ON `${TABLE_NAME}` (`task_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "jobs",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "job_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "tasks",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "task_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "materials",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `category` TEXT NOT NULL, `part_number` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "partNumber",
+            "columnName": "part_number",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "inventory_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `material_id` TEXT NOT NULL, `quantity_on_hand` REAL NOT NULL, `unit_of_measure` TEXT NOT NULL, `location` TEXT NOT NULL, `low_stock_threshold` REAL, PRIMARY KEY(`id`), FOREIGN KEY(`material_id`) REFERENCES `materials`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialId",
+            "columnName": "material_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityOnHand",
+            "columnName": "quantity_on_hand",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unitOfMeasure",
+            "columnName": "unit_of_measure",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "location",
+            "columnName": "location",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowStockThreshold",
+            "columnName": "low_stock_threshold",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventory_items_material_id",
+            "unique": false,
+            "columnNames": [
+              "material_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_items_material_id` ON `${TABLE_NAME}` (`material_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "materials",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "material_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "inventory_transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `inventory_item_id` TEXT NOT NULL, `transaction_type` TEXT NOT NULL, `quantity_change` REAL NOT NULL, `timestamp` INTEGER NOT NULL, `related_job_id` TEXT, `related_task_id` TEXT, `notes` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`inventory_item_id`) REFERENCES `inventory_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`related_job_id`) REFERENCES `jobs`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`related_task_id`) REFERENCES `tasks`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inventoryItemId",
+            "columnName": "inventory_item_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transactionType",
+            "columnName": "transaction_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityChange",
+            "columnName": "quantity_change",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "relatedJobId",
+            "columnName": "related_job_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "relatedTaskId",
+            "columnName": "related_task_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventory_transactions_inventory_item_id",
+            "unique": false,
+            "columnNames": [
+              "inventory_item_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_transactions_inventory_item_id` ON `${TABLE_NAME}` (`inventory_item_id`)"
+          },
+          {
+            "name": "index_inventory_transactions_related_job_id",
+            "unique": false,
+            "columnNames": [
+              "related_job_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_transactions_related_job_id` ON `${TABLE_NAME}` (`related_job_id`)"
+          },
+          {
+            "name": "index_inventory_transactions_related_task_id",
+            "unique": false,
+            "columnNames": [
+              "related_task_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_inventory_transactions_related_task_id` ON `${TABLE_NAME}` (`related_task_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "inventory_items",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "inventory_item_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "jobs",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "related_job_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "tasks",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "related_task_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "clients",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `contact_person` TEXT NOT NULL, `phone` TEXT NOT NULL, `email` TEXT NOT NULL, `primary_address` TEXT NOT NULL, `billing_address` TEXT NOT NULL, `notes` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contactPerson",
+            "columnName": "contact_person",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "primaryAddress",
+            "columnName": "primary_address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "billingAddress",
+            "columnName": "billing_address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_ampacities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`material` TEXT NOT NULL, `size` TEXT NOT NULL, `temp_rating` INTEGER NOT NULL, `ampacity` REAL NOT NULL, PRIMARY KEY(`material`, `size`, `temp_rating`))",
+        "fields": [
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tempRating",
+            "columnName": "temp_rating",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ampacity",
+            "columnName": "ampacity",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "material",
+            "size",
+            "temp_rating"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_conductor_properties",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`material` TEXT NOT NULL, `size` TEXT NOT NULL, `circular_mils` REAL NOT NULL, `resistance_dc_1000ft_75c` REAL NOT NULL, `area_in2` REAL, PRIMARY KEY(`material`, `size`))",
+        "fields": [
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circularMils",
+            "columnName": "circular_mils",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceDcOhmsPer1000ft",
+            "columnName": "resistance_dc_1000ft_75c",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "areaSqIn",
+            "columnName": "area_in2",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "material",
+            "size"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_conduit_areas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`type` TEXT NOT NULL, `size` TEXT NOT NULL, `internal_area_in2` REAL NOT NULL, `fill_area_1_wire_in2` REAL NOT NULL, `fill_area_2_wires_in2` REAL NOT NULL, `fill_area_over_2_wires_in2` REAL NOT NULL, PRIMARY KEY(`type`, `size`))",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "internalAreaSqIn",
+            "columnName": "internal_area_in2",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fillArea1WireSqIn",
+            "columnName": "fill_area_1_wire_in2",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fillArea2WiresSqIn",
+            "columnName": "fill_area_2_wires_in2",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fillAreaOver2WiresSqIn",
+            "columnName": "fill_area_over_2_wires_in2",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "type",
+            "size"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_wire_areas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `insulation_type` TEXT, `size` TEXT NOT NULL, `area_in2` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "insulationType",
+            "columnName": "insulation_type",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "areaSqIn",
+            "columnName": "area_in2",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nec_wire_areas_insulation_type_size",
+            "unique": true,
+            "columnNames": [
+              "insulation_type",
+              "size"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_nec_wire_areas_insulation_type_size` ON `${TABLE_NAME}` (`insulation_type`, `size`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nec_box_fill_allowances",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`item_type` TEXT NOT NULL, `conductor_size` TEXT NOT NULL, `volume_allowance_in3` REAL NOT NULL, `count_multiplier` INTEGER NOT NULL, PRIMARY KEY(`item_type`, `conductor_size`))",
+        "fields": [
+          {
+            "fieldPath": "item_type",
+            "columnName": "item_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conductorSize",
+            "columnName": "conductor_size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumeAllowanceCuIn",
+            "columnName": "volume_allowance_in3",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countMultiplier",
+            "columnName": "count_multiplier",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "item_type",
+            "conductor_size"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_temp_corrections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`temp_rating` INTEGER NOT NULL, `ambient_temp_celsius` REAL NOT NULL, `correction_factor` REAL NOT NULL, PRIMARY KEY(`temp_rating`, `ambient_temp_celsius`))",
+        "fields": [
+          {
+            "fieldPath": "tempRating",
+            "columnName": "temp_rating",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambientTempCelsius",
+            "columnName": "ambient_temp_celsius",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctionFactor",
+            "columnName": "correction_factor",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "temp_rating",
+            "ambient_temp_celsius"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_conductor_adjustments",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`min_conductors` INTEGER NOT NULL, `max_conductors` INTEGER NOT NULL, `adjustment_factor` REAL NOT NULL, PRIMARY KEY(`min_conductors`, `max_conductors`))",
+        "fields": [
+          {
+            "fieldPath": "minConductors",
+            "columnName": "min_conductors",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxConductors",
+            "columnName": "max_conductors",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "adjustmentFactor",
+            "columnName": "adjustment_factor",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "min_conductors",
+            "max_conductors"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_motor_flc",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hp` REAL NOT NULL, `voltage` INTEGER NOT NULL, `phase` TEXT NOT NULL, `flc` REAL NOT NULL, PRIMARY KEY(`hp`, `voltage`, `phase`))",
+        "fields": [
+          {
+            "fieldPath": "hp",
+            "columnName": "hp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "voltage",
+            "columnName": "voltage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phase",
+            "columnName": "phase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flc",
+            "columnName": "flc",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "hp",
+            "voltage",
+            "phase"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_motor_protection",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`motor_type` TEXT NOT NULL, `device_type` TEXT NOT NULL, `max_percent_flc` INTEGER NOT NULL, PRIMARY KEY(`motor_type`, `device_type`))",
+        "fields": [
+          {
+            "fieldPath": "motorType",
+            "columnName": "motor_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceType",
+            "columnName": "device_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxPercentFLC",
+            "columnName": "max_percent_flc",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "motor_type",
+            "device_type"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_conductor_impedance",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`material` TEXT NOT NULL, `size` TEXT NOT NULL, `raceway_type` TEXT NOT NULL, `resistance_ac_ohms_1000ft` REAL NOT NULL, `reactance_xl_ohms_1000ft` REAL NOT NULL, PRIMARY KEY(`material`, `size`, `raceway_type`))",
+        "fields": [
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "racewayType",
+            "columnName": "raceway_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceAcOhmsPer1000ft",
+            "columnName": "resistance_ac_ohms_1000ft",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reactanceOhmsPer1000ft",
+            "columnName": "reactance_xl_ohms_1000ft",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "material",
+            "size",
+            "raceway_type"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_articles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`articleNumber` TEXT NOT NULL, `title` TEXT NOT NULL, PRIMARY KEY(`articleNumber`))",
+        "fields": [
+          {
+            "fieldPath": "articleNumber",
+            "columnName": "articleNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "articleNumber"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_sections",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sectionNumber` TEXT NOT NULL, `article_number` TEXT NOT NULL, `title` TEXT, `text_content` TEXT NOT NULL, PRIMARY KEY(`sectionNumber`))",
+        "fields": [
+          {
+            "fieldPath": "sectionNumber",
+            "columnName": "sectionNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "articleNumber",
+            "columnName": "article_number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "textContent",
+            "columnName": "text_content",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sectionNumber"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nec_sections_article_number",
+            "unique": false,
+            "columnNames": [
+              "article_number"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nec_sections_article_number` ON `${TABLE_NAME}` (`article_number`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nec_sections_fts",
+        "createSql": "CREATE VIRTUAL TABLE IF NOT EXISTS `${TABLE_NAME}` USING FTS4(`text_content` TEXT NOT NULL, `title` TEXT, content=`nec_sections`)",
+        "fields": [
+          {
+            "fieldPath": "textContent",
+            "columnName": "text_content",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": []
+        },
+        "ftsVersion": "FTS4",
+        "ftsOptions": {
+          "tokenizer": "simple",
+          "tokenizerArgs": [],
+          "contentTable": "nec_sections",
+          "languageIdColumnName": "",
+          "matchInfo": "FTS4",
+          "notIndexedColumns": [],
+          "prefixSizes": [],
+          "preferredOrder": "ASC"
+        },
+        "contentSyncTriggers": [
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_nec_sections_fts_BEFORE_UPDATE BEFORE UPDATE ON `nec_sections` BEGIN DELETE FROM `nec_sections_fts` WHERE `docid`=OLD.`rowid`; END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_nec_sections_fts_BEFORE_DELETE BEFORE DELETE ON `nec_sections` BEGIN DELETE FROM `nec_sections_fts` WHERE `docid`=OLD.`rowid`; END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_nec_sections_fts_AFTER_UPDATE AFTER UPDATE ON `nec_sections` BEGIN INSERT INTO `nec_sections_fts`(`docid`, `text_content`, `title`) VALUES (NEW.`rowid`, NEW.`text_content`, NEW.`title`); END",
+          "CREATE TRIGGER IF NOT EXISTS room_fts_content_sync_nec_sections_fts_AFTER_INSERT AFTER INSERT ON `nec_sections` BEGIN INSERT INTO `nec_sections_fts`(`docid`, `text_content`, `title`) VALUES (NEW.`rowid`, NEW.`text_content`, NEW.`title`); END"
+        ]
+      },
+      {
+        "tableName": "nec_cu_tables",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `description` TEXT, `ceiling_reflectance` INTEGER NOT NULL, `wall_reflectance` INTEGER NOT NULL, `floor_reflectance` INTEGER NOT NULL, `cu_values` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ceilingReflectance",
+            "columnName": "ceiling_reflectance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wallReflectance",
+            "columnName": "wall_reflectance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "floorReflectance",
+            "columnName": "floor_reflectance",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cuValues",
+            "columnName": "cu_values",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_ac_impedance",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`material` TEXT NOT NULL, `size` TEXT NOT NULL, `resistance_ac_ohms_per_1000ft` REAL NOT NULL, `reactance_ohms_per_1000ft` REAL NOT NULL, PRIMARY KEY(`material`, `size`))",
+        "fields": [
+          {
+            "fieldPath": "material",
+            "columnName": "material",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "size",
+            "columnName": "size",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resistanceAcOhmsPer1000ft",
+            "columnName": "resistance_ac_ohms_per_1000ft",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reactanceOhmsPer1000ft",
+            "columnName": "reactance_ohms_per_1000ft",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "material",
+            "size"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_motor_protection_nontime_delay_fuse",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hp` REAL NOT NULL, `volts` INTEGER NOT NULL, `amps` REAL NOT NULL, `max_fuse` INTEGER NOT NULL, PRIMARY KEY(`hp`, `volts`))",
+        "fields": [
+          {
+            "fieldPath": "hp",
+            "columnName": "hp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volts",
+            "columnName": "volts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amps",
+            "columnName": "amps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxFuse",
+            "columnName": "max_fuse",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "hp",
+            "volts"
+          ]
+        }
+      },
+      {
+        "tableName": "nec_motor_protection_time_delay_fuse",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`hp` REAL NOT NULL, `volts` INTEGER NOT NULL, `amps` REAL NOT NULL, `max_fuse` INTEGER NOT NULL, PRIMARY KEY(`hp`, `volts`))",
+        "fields": [
+          {
+            "fieldPath": "hp",
+            "columnName": "hp",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volts",
+            "columnName": "volts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amps",
+            "columnName": "amps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "maxFuse",
+            "columnName": "max_fuse",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "hp",
+            "volts"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ef888aae90430266702e8223d561fe92')"
+    ]
+  }
+}

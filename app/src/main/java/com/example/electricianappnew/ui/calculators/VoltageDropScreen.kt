@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons // Add import for Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack // Add import for Back Arrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+// LaunchedEffect import removed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -18,44 +19,15 @@ import androidx.navigation.NavController // Add NavController import
 import com.example.electricianappnew.ui.calculators.viewmodel.VoltageDropViewModel // Import ViewModel
 import com.example.electricianappnew.ui.common.ExposedDropdownMenuBoxInput
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
-import androidx.compose.material3.Scaffold // Import Scaffold
-import androidx.compose.material3.TopAppBar // Import TopAppBar
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 // Removed kotlin.math import as logic is in ViewModel
-import androidx.compose.foundation.verticalScroll // Import verticalScroll
-import androidx.compose.foundation.rememberScrollState // Import rememberScrollState
-import java.util.Locale // Import Locale
-import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared
-
-// TODO: Replace with actual data loading/lookup
-object NecConductorData {
-    // Simplified placeholder data - Needs real NEC Chapter 9, Table 8 data
-    // Resistance (ohms per kFT or per meter) and Circular Mils (CM)
-    data class ConductorProperties(val resistancePer1000ft: Double, val cm: Double)
-
-    fun getProperties(material: String, size: String): ConductorProperties? {
-        // VERY simplified - needs actual table lookup
-        return when {
-            material == "Copper" && size == "14 AWG" -> ConductorProperties(resistancePer1000ft = 3.14, cm = 4110.0)
-            material == "Copper" && size == "12 AWG" -> ConductorProperties(resistancePer1000ft = 1.98, cm = 6530.0)
-            material == "Copper" && size == "10 AWG" -> ConductorProperties(resistancePer1000ft = 1.24, cm = 10380.0)
-            material == "Aluminum" && size == "12 AWG" -> ConductorProperties(resistancePer1000ft = 3.18, cm = 6530.0) // Example Al
-             // Add many more entries...
-            else -> null
-        }
-    }
-
-    // K factor (approximate resistivity) - can also be derived from Table 8
-    // K = R * CM / 1000
-    // For Copper: ~12.9 ohm-cmil/ft @ 75C
-    // For Aluminum: ~21.2 ohm-cmil/ft @ 75C
-    fun getKFactor(material: String): Double? {
-        return when (material) {
-            "Copper" -> 12.9
-            "Aluminum" -> 21.2
-            else -> null
-        }
-    }
-}
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import java.util.Locale
+import com.example.electricianappnew.ui.common.formatCalculationResult
+import android.util.Log
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // Import collectAsStateWithLifecycle
 
 
 @OptIn(ExperimentalMaterial3Api::class) // Already present, needed for TopAppBar too
@@ -65,8 +37,14 @@ fun VoltageDropScreen(
     viewModel: VoltageDropViewModel = hiltViewModel(), // Inject ViewModel
     navController: NavController // Add NavController parameter
 ) {
-    val uiState = viewModel.uiState // Observe state
-    val scrollState = rememberScrollState() // Add scroll state
+    val uiState = viewModel.uiState // Observe UI state
+    val wireSizes by viewModel.wireSizes.collectAsStateWithLifecycle() // Collect wireSizes flow
+    val phases by viewModel.phases.collectAsStateWithLifecycle() // Collect phases flow
+    val materials by viewModel.materials.collectAsStateWithLifecycle() // Collect materials flow
+    val scrollState = rememberScrollState()
+    val TAG = "VoltageDropScreen"
+
+    // LaunchedEffect removed
 
     Scaffold(
         topBar = {
@@ -85,13 +63,13 @@ fun VoltageDropScreen(
     ) { paddingValues ->
         Column(
             modifier = modifier
-                .padding(paddingValues) // Apply padding from Scaffold
-                .padding(16.dp) // Add screen padding
-                .fillMaxWidth()
-                .verticalScroll(scrollState), // Make column scrollable
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Text("Voltage Drop Calculator", style = MaterialTheme.typography.headlineSmall) // Title is now in TopAppBar
+                 .padding(paddingValues) // Apply padding from Scaffold
+                 .padding(16.dp) // Add screen padding
+                 .fillMaxWidth()
+                 .verticalScroll(scrollState), // Make column scrollable
+             horizontalAlignment = Alignment.CenterHorizontally
+         ) {
+             // Text("Voltage Drop Calculator", style = MaterialTheme.typography.headlineSmall) // Title is now in TopAppBar
             // Spacer(modifier = Modifier.height(16.dp)) // Adjust spacing if needed
 
             // Inputs
@@ -105,27 +83,31 @@ fun VoltageDropScreen(
              Spacer(modifier = Modifier.height(8.dp))
              ExposedDropdownMenuBoxInput(
                  label = "Phase",
-                 options = uiState.phases, // Use ViewModel state
+                 options = phases, // Use collected phases state
                  selectedOption = uiState.selectedPhase,
                  onOptionSelected = viewModel::onPhaseChange, // Use ViewModel
                  modifier = Modifier.fillMaxWidth()
+                 // Removed explicit zIndex
              )
              Spacer(modifier = Modifier.height(8.dp))
              Row(Modifier.fillMaxWidth()){
                  ExposedDropdownMenuBoxInput(
                      label = "Material",
-                     options = uiState.materials, // Use ViewModel state
-                     selectedOption = uiState.selectedMaterial,
-                     onOptionSelected = viewModel::onMaterialChange, // Use ViewModel
-                     modifier = Modifier.weight(1f)
+                     options = materials, // Use collected materials state
+                 selectedOption = uiState.selectedMaterial,
+                 onOptionSelected = viewModel::onMaterialChange, // Use ViewModel
+                 modifier = Modifier.weight(1f)
+                 // Removed explicit zIndex
                  )
                  Spacer(Modifier.width(8.dp))
+                 Log.d(TAG, "Wire Sizes before dropdown: $wireSizes") // Add logging here
                  ExposedDropdownMenuBoxInput(
                      label = "Size",
-                     options = viewModel.wireSizes, // Access directly from ViewModel
+                     options = wireSizes, // Use collected wireSizes state
                      selectedOption = uiState.selectedSize,
-                     onOptionSelected = viewModel::onSizeChange, // Use ViewModel
+                     onOptionSelected = viewModel::onSizeChange,
                      modifier = Modifier.weight(1f)
+                     // Removed explicit zIndex
                  )
              }
 

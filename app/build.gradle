@@ -1,20 +1,20 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
-    id 'org.jetbrains.kotlin.plugin.compose' // Add Compose Compiler plugin
-    id 'com.google.devtools.ksp' // Apply KSP by ID only (version from classpath)
-    id 'com.google.dagger.hilt.android' // Apply Hilt plugin
+    id 'com.google.devtools.ksp' // Apply KSP plugin (Keep for potential other uses, but Hilt/Room will use kapt)
+    id 'kotlin-kapt' // Apply KAPT plugin
+    id 'com.google.dagger.hilt.android'
+    id 'org.jetbrains.kotlin.plugin.compose' // Apply Compose Compiler plugin
 }
 
-
 android {
-    namespace = 'com.example.electricianappnew' // Use assignment syntax
-    compileSdk = 36 // Revert to 36, supported by AGP 8.4.1
+    namespace = "com.example.electricianappnew" // Make sure this matches your package name
+    compileSdk = 36 // Align with matrix
 
     defaultConfig {
         applicationId = "com.example.electricianappnew"
-        minSdk = 26
-        targetSdk = 36 // Revert to 36
+        minSdk = 24 // Or your minimum SDK version
+        targetSdk = 36 // Align with matrix
         versionCode = 1
         versionName = "1.0"
 
@@ -23,7 +23,7 @@ android {
             useSupportLibrary = true
         }
 
-        // Configure Room Schema Export Location
+        // Room schema location
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
@@ -33,90 +33,97 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true // Enable minification for release builds
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled = false // Set to true for release builds
+            proguardFiles(
+                getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
+            )
+        }
+        debug {
+            // Debug specific settings if needed
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17 // Or JavaVersion.VERSION_17 if needed later
-        targetCompatibility JavaVersion.VERSION_17 // Or JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17 // Align with matrix
+        targetCompatibility = JavaVersion.VERSION_17 // Align with matrix
     }
     kotlinOptions {
-        jvmTarget = '17' // Or '17'
+        jvmTarget = '17' // Align with matrix
+        freeCompilerArgs += [
+            "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+            // Add other -opt-in flags if build errors indicate more are needed
+        ]
     }
     buildFeatures {
-        compose = true // Use assignment syntax
+        compose = true // Enable Compose
     }
     composeOptions {
-        // Compose compiler version is now tied to the Kotlin version (2.0.0+)
-        // No explicit kotlinCompilerExtensionVersion needed here with Kotlin 2.1.20
+        kotlinCompilerExtensionVersion = "1.5.14" // Align with stable BOM 2024.05.00
     }
-    packagingOptions {
+    packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    kapt { // Add kapt block
+        correctErrorTypes = true
+        useBuildCache = true // Optional: Enable build cache for kapt
+    }
 }
 
 dependencies {
-    // Core Android & Kotlin
-    implementation 'androidx.core:core-ktx:1.16.0' // Step E: Update Core KTX
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7' // Example recent version
-    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
-    // Add lifecycle-runtime-compose
-    implementation 'androidx.activity:activity-compose:1.10.1' // Example recent version
 
-    // Material Components library (for XML themes/compatibility)
-    implementation 'com.google.android.material:material:1.12.0' // Step E: Update Material
+    // Core & UI
+    implementation "androidx.core:core-ktx:1.16.0" // Revert to original latest stable
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.7" // Revert to original latest stable
+    implementation "androidx.activity:activity-compose:1.9.0" // Keep this, seems necessary
+    implementation platform("androidx.compose:compose-bom:2024.05.00") // Use latest stable BOM
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.ui:ui-graphics" // Re-enabled, might be needed
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.material3:material3" // Revert back to Material 3
+    implementation "androidx.compose.material:material" // Add Material 2 for ExperimentalMaterialApi
+    implementation "androidx.compose.foundation:foundation" // Keep for now
+    implementation "androidx.lifecycle:lifecycle-runtime-compose:2.8.0" // Add Lifecycle + Compose interop
+    implementation "androidx.compose.animation:animation" // Keep for now
+    implementation "androidx.compose.runtime:runtime" // Keep for now
+    implementation "androidx.compose.material:material-icons-core" // Add Material Icons Core
+    implementation "androidx.compose.material:material-icons-extended" // Add Material Icons Extended
+    implementation "com.google.android.material:material:1.12.0" // Keep Material Components for Android (View system)
 
-    // Jetpack Compose BOM (Bill of Materials) - manages versions for Compose libraries
-    // Use a recent stable BOM version (e.g., 2024.06.00)
-    implementation platform('androidx.compose:compose-bom:2025.04.00') // Step C: Update Compose BOM
-    implementation 'androidx.compose.ui:ui'
-    implementation 'androidx.compose.ui:ui-graphics'
-    implementation 'androidx.compose.ui:ui-tooling-preview'
-    implementation 'androidx.compose.material3:material3'
-    implementation "androidx.compose.material:material-icons-core" // Core icons
-    implementation "androidx.compose.material:material-icons-extended" // Extended icons
+    // Coil (Image Loading)
+    implementation "io.coil-kt:coil-compose:2.6.0" // Add Coil for Compose
 
     // Navigation Compose
-    implementation 'androidx.navigation:navigation-compose:2.8.9' // Example recent version
+    implementation "androidx.navigation:navigation-compose:2.8.9" // Revert to original latest stable
 
-    // Room Persistence Library
-    def room_version = '2.7.0' // Example recent version
-    implementation "androidx.room:room-runtime:$room_version"
-    // annotationProcessor "androidx.room:room-compiler:$room_version" // Remove annotationProcessor
-    // To use Kotlin annotation processing tool (kapt)
-    // kapt "androidx.room:room-compiler:$room_version"
-    // To use Kotlin Symbol Processing (KSP) - Preferred for Kotlin projects
-    ksp "androidx.room:room-compiler:$room_version" // Use ksp instead
-    // Optional - Kotlin Extensions and Coroutines support for Room
-    implementation "androidx.room:room-ktx:$room_version"
-    // Optional - Test helpers
-    // testImplementation "androidx.room:room-testing:$room_version"
+    // Hilt (Dependency Injection)
+    implementation "com.google.dagger:hilt-android:2.56.2" // Revert to original latest stable
+    kapt "com.google.dagger:hilt-android-compiler:2.56.2" // Revert to original latest stable (use kapt)
+    implementation "androidx.hilt:hilt-navigation-compose:1.2.0" // This version is stable
 
-    // Hilt Dependency Injection
-    implementation 'com.google.dagger:hilt-android:2.44.2' // Revert Hilt library to previously 'working' version
-    ksp 'com.google.dagger:hilt-compiler:2.44.2' // Revert Hilt compiler to previously 'working' version
-    // ksp "com.squareup:javapoet:1.13.0" // Remove explicit Javapoet again
-    // Optional - Hilt Navigation Compose Integration
-    implementation "androidx.hilt:hilt-navigation-compose:1.2.0" // Example recent version
+    // Room (Database)
+    implementation "androidx.room:room-runtime:2.7.0" // Revert to Hilt-compatible 2.7.0
+    implementation "androidx.room:room-ktx:2.7.0" // Revert to Hilt-compatible 2.7.0
+    kapt "androidx.room:room-compiler:2.7.0" // Revert to Hilt-compatible 2.7.0 (use kapt)
 
-    // Gson for JSON parsing (used for pre-populating DB from assets)
-    implementation 'com.google.code.gson:gson:2.13.0' // Example recent version
+    // Coroutines
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2" // Revert to original latest stable
+    // implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2" // Included transitively
 
-    // Coil for Image Loading (Reverted back to v3)
-    implementation("io.coil-kt.coil3:coil:3.1.0") // Coil 3 base artifact
-    implementation("io.coil-kt.coil3:coil-compose:3.1.0") // Coil 3 compose artifact
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0") // Coil 3 network support
-    implementation("com.squareup.okhttp3:okhttp:4.12.0") // Explicit OkHttp dependency
+    // Gson (for JSON parsing if needed, e.g., for NEC data)
+    implementation "com.google.code.gson:gson:2.10.1" // Keep if needed
 
-    // Testing Dependencies (Optional for now, can add later)
-    // testImplementation 'junit:junit:4.13.2'
-    // androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    // androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-    // androidTestImplementation platform('androidx.compose:compose-bom:2025.04.00') // Step C: Update Compose BOM in tests
-    // androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-    // debugImplementation 'androidx.compose.ui:ui-tooling'
-    // debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    // Testing
+    testImplementation "junit:junit:4.13.2"
+    androidTestImplementation "androidx.test.ext:junit:1.2.1"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.6.1"
+    androidTestImplementation platform("androidx.compose:compose-bom:2024.05.00") // Align with stable BOM
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
+    debugImplementation "androidx.compose.ui:ui-tooling"
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
 }
+
+// Hilt plugin requires this at the end - REMOVED as it's in plugins {} block
+// apply plugin: 'com.google.dagger.hilt.android'

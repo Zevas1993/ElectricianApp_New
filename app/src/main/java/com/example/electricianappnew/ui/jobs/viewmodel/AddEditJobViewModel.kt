@@ -7,6 +7,7 @@ import com.example.electricianappnew.data.model.Client
 import com.example.electricianappnew.data.model.Job
 import com.example.electricianappnew.data.repository.ClientRepository
 import com.example.electricianappnew.data.repository.JobTaskRepository
+import com.example.electricianappnew.navigation.NavArg // Import NavArg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.* // Correct wildcard import
 import kotlinx.coroutines.launch
@@ -16,7 +17,7 @@ import javax.inject.Inject
 
 // State for Add/Edit Job Screen
 data class AddEditJobUiState(
-    val jobId: String? = null, // Null if adding new
+    val jobId: String? = null, // Null if adding new, String otherwise
     val jobName: String = "",
     val address: String = "",
     val description: String = "",
@@ -40,7 +41,8 @@ class AddEditJobViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val jobId: String? = savedStateHandle["jobId"]
+    // Retrieve jobId as String?, defaulting to null if not present
+    private val jobId: String? = savedStateHandle.get<String?>(NavArg.JOB_ID)
 
     private val _uiState = MutableStateFlow(AddEditJobUiState())
     val uiState: StateFlow<AddEditJobUiState> = _uiState
@@ -56,12 +58,12 @@ class AddEditJobViewModel @Inject constructor(
                 // Fetch available clients
                 val clientList = clientRepository.getAllClients().first() // Get clients for selection
 
-                // If editing, fetch existing job data
-                if (jobId != null) {
-                    val job = jobTaskRepository.getJobById(jobId).first()
+                // If editing (jobId is not null), fetch existing job data
+                if (jobId != null) { // Check if jobId is not null
+                    val job = jobTaskRepository.getJobById(jobId).first() // Use String jobId
                     if (job != null) {
                         _uiState.value = _uiState.value.copy(
-                            jobId = job.id,
+                            jobId = job.id, // Update UI state jobId with String ID
                             jobName = job.jobName,
                             address = job.address,
                             description = job.description,
@@ -108,7 +110,7 @@ class AddEditJobViewModel @Inject constructor(
         // It's okay if clientName is empty if the client was somehow deleted, but clientId must be valid.
 
         val jobToSave = Job(
-            id = currentState.jobId ?: UUID.randomUUID().toString(),
+            id = if (jobId == null) UUID.randomUUID().toString() else jobId!!, // Generate UUID for new, use existing String ID for edit
             jobName = currentState.jobName.trim(),
             clientId = currentState.selectedClientId, // Save the selected client's ID
             clientName = selectedClientName, // Save name for convenience
@@ -122,10 +124,10 @@ class AddEditJobViewModel @Inject constructor(
         _uiState.value = currentState.copy(isSaving = true, errorMessage = null)
         viewModelScope.launch {
             try {
-                if (currentState.jobId == null) {
+                if (jobId == null) { // Check if jobId is null (adding new)
                     jobTaskRepository.insertJob(jobToSave)
                 } else {
-                    jobTaskRepository.updateJob(jobToSave)
+                    jobTaskRepository.updateJob(jobToSave) // jobToSave now has the correct String ID
                 }
                 _uiState.value = _uiState.value.copy(isSaving = false, saveSuccess = true)
             } catch (e: Exception) {

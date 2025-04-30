@@ -1,0 +1,11 @@
+{
+  "wire_areas": [
+    { "insulationType": "THHN", "size": "14 AWG",  "areaSqIn": 0.0130 },
+    { "insulationType": "THHN", "size": "12 AWG",  "areaSqIn": 0.0201 },
+    { "insulationType": "THHN", "size": "10 AWG",  "areaSqIn": 0.0319 },
+    { "insulationType": "THHN", "size": "8 AWG",   "areaSqIn": 0.0527 },
+    { "insulationType": "THHN", "size": "6 AWG",   "areaSqIn": 0.0839 },
+    { "insulationType": "XHHW", "size": "4 AWG",   "areaSqIn": 0.1331 },
+    { "insulationType": "XHHW", "size": "2 AWG",   "areaSqIn": 0.1672 }
+  ]
+}

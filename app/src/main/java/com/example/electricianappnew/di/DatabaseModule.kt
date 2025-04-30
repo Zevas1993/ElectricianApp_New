@@ -1,7 +1,9 @@
 package com.example.electricianappnew.di
 
 import android.content.Context
+import android.util.Log // Add Log import
 import androidx.room.Room
+import androidx.room.RoomDatabase // Import RoomDatabase
 import com.example.electricianappnew.data.local.AppDatabase
 import com.example.electricianappnew.data.local.dao.*
 import com.example.electricianappnew.data.repository.* // Import repositories
@@ -19,23 +21,41 @@ import javax.inject.Provider // Import Provider
 @InstallIn(SingletonComponent::class) // Provides dependencies for the entire application lifecycle
 object DatabaseModule {
 
+    private val TAG = "AppStartup" // Define log tag
+
+    // Provide the DatabaseCallback itself as a Singleton
+    @Provides
+    @Singleton
+    fun provideDatabaseCallback(
+        @ApplicationContext appContext: Context,
+        dbProvider: Provider<AppDatabase> // Still need provider for lazy access inside callback
+    ): DatabaseCallback {
+        return DatabaseCallback(appContext, dbProvider)
+    }
+
     @Provides
     @Singleton // Ensure only one instance of the database is created
-    // Inject Provider<AppDatabase> lazily to break potential dependency cycle with callback
     fun provideAppDatabase(
         @ApplicationContext appContext: Context,
-        dbProvider: Provider<AppDatabase> // Use Provider
+        callbackProvider: Provider<DatabaseCallback> // Inject Provider instead of instance
     ): AppDatabase {
-        return Room.databaseBuilder(
+        Log.d(TAG, "provideAppDatabase: Building database...")
+        val callback = callbackProvider.get() // Get the callback instance from the provider
+        Log.d(TAG, "provideAppDatabase: Retrieved callback instance: $callback") // Log retrieved instance
+        val database = Room.databaseBuilder(
             appContext,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
-        .addCallback(DatabaseCallback(appContext, dbProvider)) // Add the callback here
+        // Correctly chain the builder methods
+        .addCallback(callback) // Add the retrieved callback instance
         // TODO: Add migrations here if needed in the future
         // .addMigrations(...)
-        .fallbackToDestructiveMigration(dropAllTables = true) // Updated deprecated call
-        .build()
+        .fallbackToDestructiveMigration(dropAllTables = true) // Explicitly state behavior
+        .build() // Build the database *after* all configurations
+
+        Log.d(TAG, "provideAppDatabase: Database built.")
+        return database // Return the built database instance
     }
 
     // Provide DAOs - Hilt will know how to create them from the AppDatabase instance
@@ -93,11 +113,11 @@ object DatabaseModule {
         return ClientRepositoryImpl(dao)
     }
 
-     @Provides
-    @Singleton
-    fun provideNecDataRepository(dao: NecDataDao): NecDataRepository {
-        return NecDataRepositoryImpl(dao)
-    }
+  @Provides
+  @Singleton
+  fun provideNecDataRepository(dao: NecDataDao, @ApplicationContext appContext: Context): NecDataRepository {
+      return NecDataRepositoryImpl(dao, appContext)
+  }
 
     // Alternative using @Binds (if repositories were interfaces bound to implementations)
     // @Binds abstract fun bindJobTaskRepository(impl: JobTaskRepositoryImpl): JobTaskRepository

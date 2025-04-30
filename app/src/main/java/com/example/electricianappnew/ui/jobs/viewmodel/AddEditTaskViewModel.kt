@@ -8,6 +8,7 @@ import com.example.electricianappnew.data.model.InventoryTransaction
 import com.example.electricianappnew.data.model.Task
 import com.example.electricianappnew.data.repository.InventoryRepository
 import com.example.electricianappnew.data.repository.JobTaskRepository
+import com.example.electricianappnew.navigation.NavArg // Import NavArg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.* // Correct wildcard import
 import kotlinx.coroutines.launch
@@ -17,8 +18,8 @@ import javax.inject.Inject
 
 // State for Add/Edit Task Screen
 data class AddEditTaskUiState(
-    val taskId: String? = null,
-    val jobId: String,
+    val taskId: String? = null, // Use String?
+    val jobId: String, // Use String (non-nullable as it's required)
     val description: String = "",
     val status: String = "Pending",
     val assignedTo: String = "",
@@ -40,30 +41,32 @@ class AddEditTaskViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val jobId: String = checkNotNull(savedStateHandle["jobId"])
-    private val taskId: String? = savedStateHandle["taskId"]
+    // Retrieve jobId (required) and taskId (optional) as Strings
+    private val jobId: String = checkNotNull(savedStateHandle.get<String>(NavArg.JOB_ID)) { "Job ID is required" }
+    private val taskId: String? = savedStateHandle.get<String?>(NavArg.TASK_ID) // Null if adding new task
 
-    private val _uiState = MutableStateFlow(AddEditTaskUiState(jobId = jobId))
+    private val _uiState = MutableStateFlow(AddEditTaskUiState(jobId = jobId)) // Initialize with String jobId
     val uiState: StateFlow<AddEditTaskUiState> = _uiState.asStateFlow() // Expose as immutable StateFlow
 
     init {
-        if (taskId != null) {
+        // Job ID is already checked by checkNotNull above
+        if (taskId != null) { // Check if editing an existing task (taskId is not null)
             loadTask(taskId)
         }
-        loadAvailableInventory()
+        loadAvailableInventory() // Always load inventory
     }
 
-    private fun loadTask(id: String) {
+    private fun loadTask(id: String) { // Parameter is String
         _uiState.update { it.copy(isLoading = true) } // Use update for thread safety
         viewModelScope.launch {
             try {
-                val task = jobTaskRepository.getTaskById(id).firstOrNull() // Use firstOrNull
+                val task = jobTaskRepository.getTaskById(id).firstOrNull() // Use String id
                 if (task != null) {
                     // TODO: Load previously saved material usage for this task if editing
                     _uiState.update {
                         it.copy(
-                            taskId = task.id,
-                            jobId = task.jobId,
+                            taskId = task.id, // Update UI state taskId with String ID
+                            jobId = task.jobId, // Already String
                             description = task.description,
                             status = task.status,
                             assignedTo = task.assignedTo,
@@ -148,9 +151,12 @@ class AddEditTaskViewModel @Inject constructor(
         }
         // --- End Pre-check ---
 
+        // Generate new ID if taskId is null (creating), otherwise use existing taskId (editing)
+        val currentTaskId = taskId ?: UUID.randomUUID().toString()
+
         val taskToSave = Task(
-            id = currentState.taskId ?: UUID.randomUUID().toString(),
-            jobId = currentState.jobId,
+            id = currentTaskId, // Use String ID (new or existing)
+            jobId = jobId, // Use the String jobId from SavedStateHandle
             description = currentState.description.trim(),
             status = currentState.status,
             assignedTo = currentState.assignedTo.trim(),
@@ -161,17 +167,15 @@ class AddEditTaskViewModel @Inject constructor(
         _uiState.update { it.copy(isSaving = true, errorMessage = null) }
         viewModelScope.launch {
             try {
-                // Save Task first
-                val savedTask = if (currentState.taskId == null) {
+                // Save Task (Insert or Update based on whether taskId was initially null)
+                if (taskId == null) {
                     jobTaskRepository.insertTask(taskToSave)
-                    taskToSave
                 } else {
                     jobTaskRepository.updateTask(taskToSave)
-                    taskToSave
                 }
 
                 // Process Inventory Transactions
-                // TODO: Handle edits vs initial save for transactions
+                // TODO: Handle edits vs initial save for transactions (e.g., calculate difference)
                 currentState.usedMaterials.forEach { (inventoryItemId, quantityUsed) ->
                     val inventoryItem = currentState.availableInventory.find { it.inventoryItem.id == inventoryItemId }?.inventoryItem
                     if (inventoryItem != null) {
@@ -182,9 +186,9 @@ class AddEditTaskViewModel @Inject constructor(
                             transactionType = "TASK_USAGE",
                             quantityChange = -quantityUsed,
                             timestamp = Date(),
-                            notes = "Used for task: ${savedTask.description}",
-                            relatedJobId = savedTask.jobId,
-                            relatedTaskId = savedTask.id
+                            notes = "Used for task: ${taskToSave.description}", // Use description from taskToSave
+                            relatedJobId = taskToSave.jobId, // Use String jobId
+                            relatedTaskId = taskToSave.id // Use the String taskId (currentTaskId)
                         )
 
                         inventoryRepository.insertTransaction(transaction)

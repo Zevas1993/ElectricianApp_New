@@ -1,184 +1,274 @@
 package com.example.electricianappnew.ui.jobs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddAPhoto // Explicitly import Filled again
-import androidx.compose.material.icons.filled.Delete // Import Delete icon
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // Added specific import
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.clickable // Add clickable import
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel // Import Hilt ViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+// import androidx.navigation.NavController // Removed NavController import
 import com.example.electricianappnew.data.model.Job
 import com.example.electricianappnew.data.model.Task
-import com.example.electricianappnew.ui.jobs.viewmodel.JobDetailViewModel // Import ViewModel
+import com.example.electricianappnew.navigation.Screen // Keep Screen import for routes
+import com.example.electricianappnew.ui.jobs.viewmodel.JobDetailViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobDetailScreen(
-    modifier: Modifier = Modifier,
-    viewModel: JobDetailViewModel = hiltViewModel(), // Inject ViewModel
-    onEditJobClick: (String) -> Unit,
-    onAddTaskClick: (String) -> Unit,
-    onTaskClick: (String, String) -> Unit, // Pass JobId and TaskId
-    onViewClientClick: (String) -> Unit, // Add callback for client click
-    onAddPhotoForJobClick: (String) -> Unit, // Renamed for clarity
-    onAddPhotoForTaskClick: (jobId: String, taskId: String) -> Unit // New callback for task photo
+    // Removed navController: NavController,
+    viewModel: JobDetailViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit,
+    onEditJobClick: (jobId: String) -> Unit,
+    onAddTaskClick: (jobId: String) -> Unit,
+    onEditTaskClick: (jobId: String, taskId: String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState() // Observe state
-    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val uiState by viewModel.uiState.collectAsState()
+    val job = uiState.job // Convenience variable
 
-    Scaffold( // Add Scaffold for FABs
+    // State for confirmation dialog
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var taskToDelete by remember { mutableStateOf<Task?>(null) }
+
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(job?.jobName ?: "Job Details") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) { // Use hoisted lambda
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") // Updated Icon
+                    }
+                },
+                actions = {
+                    // Edit Job Button
+                    IconButton(onClick = {
+                        job?.let { onEditJobClick(it.id) } // Use hoisted lambda
+                    }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Job")
+                    }
+                    // Add more actions if needed (e.g., Delete Job)
+                }
+            )
+        },
         floatingActionButton = {
-            Row {
-                FloatingActionButton(
-                    onClick = { uiState.job?.id?.let { onAddTaskClick(it) } },
-                    modifier = Modifier.padding(end = 8.dp) // Add padding between FABs
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Task")
-                }
-                 FloatingActionButton(onClick = { uiState.job?.id?.let { onAddPhotoForJobClick(it) } }) { // Use renamed callback
-                    Icon(Icons.Filled.AddAPhoto, contentDescription = "Add Photo for Job") // Updated description
-                }
+            FloatingActionButton(onClick = {
+                job?.let { onAddTaskClick(it.id) } // Use hoisted lambda
+            }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Task")
             }
         }
     ) { paddingValues ->
-        Column(modifier = modifier.padding(paddingValues).padding(16.dp)) {
+        Box(
+            modifier = modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 uiState.errorMessage != null -> {
-                     Text(
-                        text = uiState.errorMessage ?: "Error loading job",
+                    Text(
+                        text = uiState.errorMessage ?: "Error loading job details",
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 }
-                uiState.job != null -> {
-                    val job = uiState.job!!
-                    val client = uiState.client
-                    val tasks = uiState.tasks
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(job.jobName, style = MaterialTheme.typography.headlineMedium) // Use job.jobName
-                        IconButton(onClick = { onEditJobClick(job.id) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Job")
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // Display Client Name (clickable if client exists)
-                    Text(
-                        text = "Client: ${client?.name ?: job.clientName}", // Show clientName from Job if client fetch failed
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = if (client != null) Modifier.clickable { onViewClientClick(client.id) } else Modifier
+                job == null -> {
+                     Text(
+                        text = "Job not found.",
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
-                    Text("Address: ${job.address}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Status: ${job.status}", style = MaterialTheme.typography.bodyMedium)
-                    Text("Created: ${dateFormatter.format(job.dateCreated)}", style = MaterialTheme.typography.bodySmall)
-                    // Removed references to non-existent job.dateCompleted and job.notes
-
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-
-                    Text("Tasks", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (tasks.isEmpty()) {
-                        Text("No tasks added yet.")
-                    } else {
-                        // Use Column instead of LazyColumn if nested scrolling is an issue,
-                        // or set a fixed height for the LazyColumn. For now, keep LazyColumn.
-                        LazyColumn {
-                            items(tasks, key = { it.id }) { task ->
-                                TaskListItem(
-                                    task = task,
-                                    onClick = { onTaskClick(job.id, task.id) },
-                                    onDeleteClick = { viewModel.deleteTask(task) },
-                                    onStatusChange = { newStatus -> viewModel.updateTaskStatus(task, newStatus) },
-                                    onAddPhotoClick = { onAddPhotoForTaskClick(job.id, task.id) } // Pass callback
-                                )
-                                HorizontalDivider()
-                            }
-                        }
-                    }
                 }
                 else -> {
-                     Text("Job not found.", modifier = Modifier.align(Alignment.CenterHorizontally))
+                    JobDetailContent(
+                        job = job,
+                        tasks = uiState.tasks,
+                        onTaskClick = { taskId ->
+                            onEditTaskClick(job.id, taskId) // Use hoisted lambda
+                        },
+                        onTaskCheckedChange = viewModel::updateTaskStatus,
+                        onDeleteTaskClick = { task ->
+                            taskToDelete = task
+                            showDeleteDialog = true
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
+            }
+        }
+    }
+
+     // Confirmation Dialog for Deleting Task
+    if (showDeleteDialog && taskToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Task?") },
+            text = { Text("Are you sure you want to delete the task: \"${taskToDelete?.description}\"?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        taskToDelete?.let { viewModel.deleteTask(it.id) }
+                        showDeleteDialog = false
+                        taskToDelete = null // Reset
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun JobDetailContent(
+    job: Job,
+    tasks: List<Task>,
+    onTaskClick: (String) -> Unit, // Change Int to String
+    onTaskCheckedChange: (Task, Boolean) -> Unit,
+    onDeleteTaskClick: (Task) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(16.dp)) {
+        JobInfoCard(job = job)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Tasks", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(8.dp))
+        TaskList(
+            tasks = tasks,
+            onTaskClick = onTaskClick,
+            onTaskCheckedChange = onTaskCheckedChange,
+            onDeleteTaskClick = onDeleteTaskClick
+        )
+    }
+}
+
+@Composable
+fun JobInfoCard(job: Job, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(job.jobName, style = MaterialTheme.typography.titleLarge) // Use jobName
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Address: ${job.address ?: "N/A"}", style = MaterialTheme.typography.bodyMedium)
+            Text("Status: ${job.status}", style = MaterialTheme.typography.bodyMedium)
+            // Add more job details here (client, dates, etc.) if available
+        }
+    }
+}
+
+@Composable
+fun TaskList(
+    tasks: List<Task>,
+    onTaskClick: (String) -> Unit, // Change Int to String
+    onTaskCheckedChange: (Task, Boolean) -> Unit,
+    onDeleteTaskClick: (Task) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (tasks.isEmpty()) {
+        Text("No tasks added yet.", modifier = Modifier.padding(vertical = 16.dp))
+    } else {
+        LazyColumn(modifier = modifier) {
+            items(tasks, key = { it.id }) { task ->
+                TaskListItem(
+                    task = task,
+                    onClick = { onTaskClick(task.id) },
+                    onCheckedChange = { isChecked -> onTaskCheckedChange(task, isChecked) },
+                    onDeleteClick = { onDeleteTaskClick(task) }
+                )
+                HorizontalDivider()
             }
         }
     }
 }
 
-// Define possible task statuses
-private val taskStatuses = listOf("Pending", "In Progress", "Completed")
-
 @Composable
 fun TaskListItem(
     task: Task,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onStatusChange: (String) -> Unit,
-    onAddPhotoClick: () -> Unit // Add callback parameter
+    onCheckedChange: (Boolean) -> Unit,
+    onDeleteClick: () -> Unit
 ) {
-     Row(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(task.description, modifier = Modifier.weight(1f).clickable(onClick = onClick), style = MaterialTheme.typography.bodyLarge) // Make description clickable too
-        Spacer(modifier = Modifier.width(8.dp))
-        // Make status text clickable to cycle through statuses
-        Text(
-            text = task.status,
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.clickable {
-                val currentIndex = taskStatuses.indexOf(task.status)
-                val nextIndex = (currentIndex + 1) % taskStatuses.size
-                onStatusChange(taskStatuses[nextIndex])
-            }
+        Checkbox(
+            checked = task.status == "Completed", // Check status string instead of isComplete
+            onCheckedChange = onCheckedChange
         )
-        Spacer(modifier = Modifier.width(4.dp)) // Reduced spacer
-         IconButton(onClick = onAddPhotoClick, modifier = Modifier.size(24.dp)) { // Add Photo IconButton
-            Icon(Icons.Filled.AddAPhoto, contentDescription = "Add Photo for Task")
-        }
-        Spacer(modifier = Modifier.width(4.dp)) // Reduced spacer
-        IconButton(onClick = onDeleteClick, modifier = Modifier.size(24.dp)) { // Delete IconButton
-            Icon(Icons.Default.Delete, contentDescription = "Delete Task")
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = task.description,
+            modifier = Modifier.weight(1f),
+            style = if (task.status == "Completed") MaterialTheme.typography.bodyMedium.copy( // Check status string
+                textDecoration = TextDecoration.LineThrough,
+                color = MaterialTheme.colorScheme.onSurfaceVariant // Dim completed tasks
+            ) else MaterialTheme.typography.bodyMedium
+        )
+         IconButton(onClick = onDeleteClick) {
+            Icon(Icons.Default.DeleteOutline, contentDescription = "Delete Task")
         }
     }
 }
 
 
+// --- Preview ---
 @Preview(showBackground = true)
 @Composable
 fun JobDetailScreenPreview() {
     ElectricianAppNewTheme {
-        // Preview won't have real ViewModel interaction
-         JobDetailScreen(
-             onEditJobClick = {},
-             onAddTaskClick = {},
-             onTaskClick = { _, _ -> },
-             onViewClientClick = {},
-             onAddPhotoForJobClick = {},
-             onAddPhotoForTaskClick = { _, _ -> } // Add dummy callback
-         )
+        // Use jobName and status in preview data, ADD clientId and clientName
+        val previewJob = Job(
+            id = "preview_job_1",
+            jobName = "Kitchen Remodel",
+            clientId = "preview_client_1", // Add dummy clientId
+            clientName = "Preview Client", // Add dummy clientName
+            address = "456 Oak Ave",
+            status = "In Progress"
+        )
+        val previewTasks = listOf(
+            Task(id = "preview_task_1", jobId = "preview_job_1", description = "Rough-in wiring", status = "Completed"),
+            Task(id = "preview_task_2", jobId = "preview_job_1", description = "Install outlets and switches", status = "In Progress"),
+            Task(id = "preview_task_3", jobId = "preview_job_1", description = "Install light fixtures", status = "Pending")
+        )
+
+        Scaffold(
+            topBar = {
+            TopAppBar(
+                title = { Text("Job Details Preview") },
+                navigationIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, "") }, // Updated Icon
+                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Edit, "") } }
+            )
+        },
+            floatingActionButton = { FloatingActionButton(onClick = {}) { Icon(Icons.Default.Add, "") } }
+        ) { padding ->
+            JobDetailContent(
+                job = previewJob,
+                tasks = previewTasks,
+                onTaskClick = {},
+                onTaskCheckedChange = { _, _ -> },
+                onDeleteTaskClick = {},
+                modifier = Modifier.padding(padding)
+            )
+        }
     }
 }

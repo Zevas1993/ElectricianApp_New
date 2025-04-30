@@ -2,133 +2,131 @@ package com.example.electricianappnew.ui.jobs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete // Import Delete icon
-import androidx.compose.material.icons.filled.Search // Import Search icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel // Import Hilt ViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+// import androidx.navigation.NavController // Removed NavController import
 import com.example.electricianappnew.data.model.Job
-import com.example.electricianappnew.ui.jobs.viewmodel.JobListViewModel // Import ViewModel
+import com.example.electricianappnew.navigation.Screen // Keep Screen import for routes
+import com.example.electricianappnew.ui.jobs.viewmodel.JobListViewModel
 import com.example.electricianappnew.ui.theme.ElectricianAppNewTheme
-import java.util.Date
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobListScreen(
-    modifier: Modifier = Modifier,
-    viewModel: JobListViewModel = hiltViewModel(), // Inject ViewModel
-    onJobClick: (String) -> Unit,
-    onAddJobClick: () -> Unit
+    // Removed navController: NavController,
+    viewModel: JobListViewModel = hiltViewModel(),
+    onAddJobClick: () -> Unit, // Added lambda for adding job
+    onJobClick: (String) -> Unit, // Added lambda for clicking job (jobId is String)
+    modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsState() // Observe state
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Jobs") })
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddJobClick) {
+            FloatingActionButton(onClick = onAddJobClick) { // Use hoisted lambda
                 Icon(Icons.Default.Add, contentDescription = "Add Job")
             }
         }
     ) { paddingValues ->
-        Column(modifier = modifier.padding(paddingValues).padding(16.dp)) {
-            Text("Jobs", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Search Input Field
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
-                label = { Text("Search Jobs...") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-
+        Box(
+            modifier = modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
             when {
-                 uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 uiState.errorMessage != null -> {
                     Text(
-                        text = uiState.errorMessage ?: "Unknown error",
+                        text = uiState.errorMessage ?: "Error loading jobs",
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 }
-                 // Check displayedJobs for empty state after filtering
-                uiState.displayedJobs.isEmpty() && !uiState.isLoading -> {
-                     Text(
-                         if (uiState.searchQuery.isBlank()) "No jobs found. Add one!" else "No jobs match your search.",
-                         modifier = Modifier.align(Alignment.CenterHorizontally)
-                     )
+                uiState.jobs.isEmpty() -> {
+                    Text(
+                        text = "No jobs found. Tap '+' to add one.",
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                    )
                 }
                 else -> {
-                    LazyColumn {
-                         // Iterate over displayedJobs
-                        items(uiState.displayedJobs, key = { it.id }) { job ->
-                            JobListItem(
-                                job = job,
-                                onClick = { onJobClick(job.id) },
-                                onDeleteClick = { viewModel.deleteJob(job) } // Pass delete handler
-                            )
-                            HorizontalDivider()
-                        }
-                    }
+                    JobListContent(
+                        jobs = uiState.jobs,
+                        onJobClick = onJobClick, // Pass hoisted lambda directly
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
-        } // <-- Add missing closing brace for Column
+        }
     }
 }
 
 @Composable
-fun JobListItem(job: Job, onClick: () -> Unit, onDeleteClick: () -> Unit) { // Add onDeleteClick parameter
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+fun JobListContent(
+    jobs: List<Job>,
+    onJobClick: (String) -> Unit, // Change Int to String
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 8.dp),
+        contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(job.jobName, style = MaterialTheme.typography.titleMedium)
-            Text("${job.clientName} - ${job.address}", style = MaterialTheme.typography.bodySmall)
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(job.status, style = MaterialTheme.typography.labelMedium) // Or use a Chip
-        Spacer(modifier = Modifier.width(8.dp))
-        IconButton(onClick = onDeleteClick) { // Add Delete IconButton
-            Icon(Icons.Default.Delete, contentDescription = "Delete Job")
+        items(jobs, key = { it.id }) { job ->
+            JobListItem(job = job, onClick = { onJobClick(job.id) })
+            HorizontalDivider()
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class) // Add OptIn for ListItem
+@Composable
+fun JobListItem(
+    job: Job,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(job.jobName) }, // Use jobName
+        supportingContent = { Text(job.address ?: "No address") },
+        modifier = Modifier.clickable(onClick = onClick).padding(vertical = 8.dp)
+        // Add more details or actions if needed (e.g., status indicator)
+    )
+}
+
+// Preview (Optional)
 @Preview(showBackground = true)
 @Composable
 fun JobListScreenPreview() {
     ElectricianAppNewTheme {
-        JobListScreen(onJobClick = {}, onAddJobClick = {})
+        // Provide dummy data for preview with String ID and jobName
+        val dummyJobs = List(5) {
+            Job(
+                id = it.toString(), // Use String ID
+                jobName = "Job ${it + 1}", // Use jobName
+                clientId = "preview_client_${it}", // Add dummy clientId
+                clientName = "Preview Client ${it}", // Add dummy clientName if needed for display
+                address = "123 Main St",
+                status = "Open"
+            )
+        }
+        Scaffold(
+            topBar = { TopAppBar(title = { Text("Jobs Preview") }) },
+            floatingActionButton = { FloatingActionButton(onClick = {}) { Icon(Icons.Default.Add, "") } }
+        ) { padding ->
+            // Ensure onJobClick lambda matches the (String) -> Unit signature
+            JobListContent(jobs = dummyJobs, onJobClick = { /* Do nothing in preview */ }, modifier = Modifier.padding(padding))
+        }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun JobListItemPreview() {
-     ElectricianAppNewTheme {
-         // Add clientId to the dummy Job object
-         JobListItem(
-             job = Job(jobName = "Preview Job", clientId = "dummy_client", clientName = "Preview Client", address = "Preview Address", status = "Preview Status"),
-             onClick = {},
-             onDeleteClick = {} // Add dummy onDeleteClick for preview
-         )
-     }
 }

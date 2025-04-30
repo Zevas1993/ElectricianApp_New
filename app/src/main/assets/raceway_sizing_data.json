@@ -1,0 +1,10 @@
+{
+  "raceway_areas": [
+    { "type": "EMT",          "size": "1/2 inch", "internalAreaSqIn": 0.304, "fillAreaOver2WiresSqIn": 0.122 },
+    { "type": "EMT",          "size": "3/4 inch", "internalAreaSqIn": 0.533, "fillAreaOver2WiresSqIn": 0.213 },
+    { "type": "RMC",          "size": "1/2 inch", "internalAreaSqIn": 0.320, "fillAreaOver2WiresSqIn": 0.128 },
+    { "type": "RMC",          "size": "3/4 inch", "internalAreaSqIn": 0.650, "fillAreaOver2WiresSqIn": 0.260 },
+    { "type": "IMC",          "size": "1/2 inch", "internalAreaSqIn": 0.285, "fillAreaOver2WiresSqIn": 0.114 },
+    { "type": "IMC",          "size": "3/4 inch", "internalAreaSqIn": 0.409, "fillAreaOver2WiresSqIn": 0.164 }
+  ]
+}

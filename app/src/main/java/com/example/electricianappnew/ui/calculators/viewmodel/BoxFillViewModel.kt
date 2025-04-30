@@ -17,8 +17,7 @@ data class BoxFillUiState(
     // Inputs - Using maps to store counts per size for conductors/grounds
     val conductorCounts: Map<String, String> = mapOf(), // Map<Size, CountString>
     val groundCounts: Map<String, String> = mapOf(),    // Map<Size, CountString>
-    val numClampsStr: String = "0",
-    val numSupportFittingsStr: String = "0",
+    // Removed numClampsStr and numSupportFittingsStr
     val numDevicesStr: String = "0", // Yokes/Straps
     val boxVolumeStr: String = "", // User can enter volume directly
 
@@ -74,15 +73,7 @@ class BoxFillViewModel @Inject constructor(
         calculateBoxFill()
     }
 
-    fun onClampCountChange(countStr: String) {
-        uiState = uiState.copy(numClampsStr = countStr, errorMessage = null)
-        calculateBoxFill()
-    }
-
-    fun onSupportFittingCountChange(countStr: String) {
-        uiState = uiState.copy(numSupportFittingsStr = countStr, errorMessage = null)
-        calculateBoxFill()
-    }
+    // Removed onClampCountChange and onSupportFittingCountChange functions
 
     fun onDeviceCountChange(countStr: String) {
         uiState = uiState.copy(numDevicesStr = countStr, errorMessage = null)
@@ -131,37 +122,24 @@ class BoxFillViewModel @Inject constructor(
                     }
                 }
 
-                // 2. Clamp Fill (314.16(B)(2)) - One allowance based on largest conductor
-                val numClamps = uiState.numClampsStr.toIntOrNull() ?: 0
-                if (numClamps > 0) {
-                    if (largestConductorSize == null) throw CalculationException("Cannot calculate clamp fill without conductors.")
-                    val entry = necDataRepository.getBoxFillEntry("Clamp", largestConductorSize)
-                        ?: necDataRepository.getBoxFillEntry("Clamp", "N/A") // Fallback if specific size not found for clamps
-                    if (entry == null) throw CalculationException("Volume allowance not found for clamps (based on $largestConductorSize conductor).")
-                    calculatedVolume += entry.volumeAllowanceCuIn // Only add ONCE regardless of numClamps > 0
-                }
+                // Section for Clamp Fill (314.16(B)(2)) - REMOVED
+                // Section for Support Fittings Fill (314.16(B)(3)) - REMOVED
 
-                // 3. Support Fittings Fill (314.16(B)(3)) - One allowance each based on largest conductor
-                val numFittings = uiState.numSupportFittingsStr.toIntOrNull() ?: 0
-                if (numFittings > 0) {
-                     if (largestConductorSize == null) throw CalculationException("Cannot calculate fitting fill without conductors.")
-                     val entry = necDataRepository.getBoxFillEntry("Fitting", largestConductorSize)
-                         ?: necDataRepository.getBoxFillEntry("Fitting", "N/A") // Fallback
-                     if (entry == null) throw CalculationException("Volume allowance not found for support fittings (based on $largestConductorSize conductor).")
-                     calculatedVolume += numFittings * entry.volumeAllowanceCuIn
-                }
-
-                // 4. Device Fill (314.16(B)(4)) - Double allowance per yoke based on largest conductor connected TO DEVICE
+                // 2. Device Fill (314.16(B)(4)) - Double allowance per yoke based on largest conductor connected TO DEVICE
+                // Was step 4, now step 2
                 val numDevices = uiState.numDevicesStr.toIntOrNull() ?: 0
                 if (numDevices > 0) {
                      if (largestDeviceConductorSize == null) throw CalculationException("Cannot calculate device fill without conductors connected to them.")
-                     val entry = necDataRepository.getBoxFillEntry("Device", largestDeviceConductorSize)
+                     // Safely store the non-null value in a new variable to avoid smart cast issues
+                     val deviceConductorSize = largestDeviceConductorSize
+                     val entry = necDataRepository.getBoxFillEntry("Device", deviceConductorSize!!) // Add non-null assertion
                          ?: necDataRepository.getBoxFillEntry("Device", "N/A") // Fallback
-                     if (entry == null) throw CalculationException("Volume allowance not found for devices (based on $largestDeviceConductorSize conductor).")
+                     if (entry == null) throw CalculationException("Volume allowance not found for devices (based on $deviceConductorSize conductor).")
                      calculatedVolume += numDevices * entry.volumeAllowanceCuIn * entry.countMultiplier // Multiplier is usually 2
-                }
+                 }
 
-                // 5. Equipment Grounding Conductor Fill (314.16(B)(5)) - One allowance based on largest EGC
+                // 3. Equipment Grounding Conductor Fill (314.16(B)(5)) - One allowance based on largest EGC
+                // Was step 5, now step 3
                 uiState.groundCounts.forEach { (size, countStr) ->
                      val count = countStr.toIntOrNull() ?: 0
                      if (count > 0) {
@@ -169,9 +147,11 @@ class BoxFillViewModel @Inject constructor(
                      }
                  }
                 if (largestGroundSize != null) {
-                    val entry = necDataRepository.getBoxFillEntry("Ground", largestGroundSize)
+                    // Safely store the non-null value in a new variable to avoid smart cast issues
+                    val groundSize = largestGroundSize
+                    val entry = necDataRepository.getBoxFillEntry("Ground", groundSize!!) // Add non-null assertion
                          ?: necDataRepository.getBoxFillEntry("Ground", "N/A") // Fallback
-                    if (entry == null) throw CalculationException("Volume allowance not found for grounding conductors (based on $largestGroundSize).")
+                    if (entry == null) throw CalculationException("Volume allowance not found for grounding conductors (based on $groundSize).")
                     calculatedVolume += entry.volumeAllowanceCuIn // Only add ONCE for all grounds
                 }
 

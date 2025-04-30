@@ -26,16 +26,24 @@ import com.example.electricianappnew.data.model.*
         NecConductorAdjustmentEntry::class,
         // Added for Motor Calc
         NecMotorFLCEntry::class,
-        NecMotorProtectionEntry::class,
+        NecMotorProtectionPercentageEntry::class, // Corrected entity name
         // Added for Fault Current Calc
-        NecConductorImpedanceEntry::class
+        NecConductorImpedanceEntry::class,
+        // Added for Full NEC Code Search
+        NecArticle::class,
+        NecSection::class,
+        NecSectionFts::class,
+        NecCuTable::class, // Added for Luminaire Calc
+        NecAcImpedanceEntry::class, // Added for AC Impedance
+        NecMotorProtectionNonTimeDelayFuseSizeEntry::class, // Corrected entity name
+        NecMotorProtectionTimeDelayFuseSizeEntry::class // Corrected entity name
         // Add other entities here later (e.g., estimates, invoices)
     ],
-    version = 2, // Incremented version due to Job entity change
+    version = 49, // Incremented version to force onCreate callback for new JSON data
     exportSchema = true
-    // TODO: Add autoMigrations later if schema changes (e.g., @AutoMigration(from = 1, to = 2))
+    // TODO: Add autoMigrations later if schema changes (e.g., @AutoMigration(from = 6, to = 7))
 )
-@TypeConverters(DateConverter::class) // Register the converter
+@TypeConverters(DateConverter::class, com.example.electricianappnew.data.local.converters.NecDataTypeConverters::class) // Register the converters
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun jobTaskDao(): JobTaskDao

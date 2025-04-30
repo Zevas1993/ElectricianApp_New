@@ -25,7 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+// import androidx.compose.material3.MenuAnchorType // Removed unused import
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 // Runtime
@@ -37,7 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.zIndex // Import zIndex
 import androidx.compose.ui.unit.dp
+import android.util.Log // Import Log
 // Project specific models (ensure correct paths)
 import com.example.electricianappnew.ui.calculators.viewmodel.ResistanceEntry
 import com.example.electricianappnew.data.model.WireEntry
@@ -55,14 +57,18 @@ fun ExposedDropdownMenuBoxInput(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     optionDisplayTransform: (String) -> String = { it }
+    // zIndex parameter removed
 ) {
     var expanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
+    // Default conditional zIndex logic
+    val appliedZIndex = if (expanded && enabled) 1f else 0f
 
     ExposedDropdownMenuBox(
         expanded = expanded && enabled,
         onExpandedChange = { if (enabled) expanded = !expanded },
-        modifier = modifier
+        // Apply the default conditional zIndex
+        modifier = modifier.zIndex(appliedZIndex)
     ) {
         OutlinedTextField(
             value = optionDisplayTransform(selectedOption),
@@ -70,11 +76,12 @@ fun ExposedDropdownMenuBoxInput(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && enabled) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(), // Recommended for styling consistency
             enabled = enabled,
-            modifier = Modifier.menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = enabled).fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().menuAnchor() // Correct usage: Apply menuAnchor without parameters
         )
         ExposedDropdownMenu(
-            expanded = expanded && enabled,
+            expanded = expanded && enabled, // Control expansion based on enabled state here
             onDismissRequest = { expanded = false }
         ) {
             options.forEach { option ->
@@ -132,6 +139,7 @@ fun WireInputRow(
     wireSizeOptions: List<String>,
     onEntryChange: (WireEntry) -> Unit,
     onRemoveClick: () -> Unit
+    // Removed wireTypeEnabled parameter
 ) {
     Row(
         modifier = Modifier
@@ -146,15 +154,17 @@ fun WireInputRow(
              onOptionSelected = { newType ->
                  onEntryChange(entry.copy(type = newType))
              },
-             modifier = Modifier.weight(2f)
+             modifier = Modifier.weight(2f),
+             enabled = wireTypeOptions.isNotEmpty() // Enable if options exist
          )
          Spacer(Modifier.width(8.dp))
           ExposedDropdownMenuBoxInput(
              label = "Size",
-             options = wireSizeOptions,
+             options = wireSizeOptions, // Use passed wireSizeOptions
              selectedOption = entry.size,
              onOptionSelected = { newSize -> onEntryChange(entry.copy(size = newSize)) },
-             modifier = Modifier.weight(1.5f)
+             modifier = Modifier.weight(1.5f),
+             enabled = wireSizeOptions.isNotEmpty() // Enable if size options exist
          )
          Spacer(Modifier.width(8.dp))
          OutlinedTextField(

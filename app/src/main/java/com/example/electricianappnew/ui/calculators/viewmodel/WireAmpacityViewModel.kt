@@ -1,223 +1,185 @@
 package com.example.electricianappnew.ui.calculators.viewmodel
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.electricianappnew.data.repository.NecDataRepository // Import repository
+import com.example.electricianappnew.data.repository.NecDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.pow
+import com.example.electricianappnew.data.repository.AmpacityCalculationResult
+import kotlinx.coroutines.Dispatchers // Import Dispatchers
+// Removed duplicate Log import
 
-// Data class for UI State
+// Data class for UI State (now represents the calculation result)
 data class WireAmpacityUiState(
-    val selectedMaterial: String = "Copper",
-    val selectedSize: String = "12 AWG",
-    val selectedInsulation: String = "THHN/THWN-2", // Default to 90C
-    val ambientTempStr: String = "30",
-    val numConductorsStr: String = "3",
     val baseAmpacity: Double? = null,
     val tempCorrectionFactor: Double? = null,
     val conductorAdjustmentFactor: Double? = null,
     val adjustedAmpacity: Double? = null,
     val errorMessage: String? = null
-    // Dropdown lists are now separate state in ViewModel
 )
-
-// Placeholder object for factors not yet in DB/Repo - REMOVED
 
 @HiltViewModel
 class WireAmpacityViewModel @Inject constructor(
-    private val necDataRepository: NecDataRepository // Inject repository
+    private val necDataRepository: NecDataRepository
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(WireAmpacityUiState())
-        private set
+    // --- StateFlows for Dropdown Options (Fetched from repository) ---
+    // Assuming getDistinctConductorMaterials exists and returns Flow<List<String>>
+    val materials: StateFlow<List<String>> = necDataRepository.getDistinctConductorMaterials()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
 
-    // State for dropdown options
-    var materials by mutableStateOf(listOf("Copper", "Aluminum")) // Keep simple for now
-        private set
-    var wireSizes by mutableStateOf<List<String>>(emptyList())
-        private set
-    // Store insulation as Pair(Name, TempRating) for easier use
-    var insulationOptions by mutableStateOf<List<Pair<String, Int>>>(emptyList())
-        private set
+    val wireSizes: StateFlow<List<String>> = necDataRepository.getDistinctAmpacityWireSizes()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
 
-    init {
-        loadInitialData()
-    }
-
-    private fun loadInitialData() {
-        viewModelScope.launch {
-            // Fetch wire sizes (assuming they are mostly independent of material/temp for the list)
-            wireSizes = necDataRepository.getDistinctAmpacityWireSizes()
-            // Fetch distinct temp ratings to build insulation options map/list
-            val ratings = necDataRepository.getDistinctAmpacityTempRatings()
-            // Create a more structured insulation list (assuming names based on ratings)
-            // TODO: Ideally, fetch distinct insulation *names* and their ratings if DB stores them
-            insulationOptions = ratings.mapNotNull { rating ->
+    // Insulation Options (Fetched ratings from repo, mapped to Name/Rating pairs)
+    val insulationOptions: StateFlow<List<Pair<String, Int>>> = necDataRepository.getDistinctAmpacityTempRatings()
+        .map { ratingsList ->
+            ratingsList.mapNotNull { rating ->
                 when (rating) {
                     60 -> "TW/UF" to 60
                     75 -> "THW/THWN/XHHW" to 75
                     90 -> "THHN/THWN-2/XHHW-2" to 90
-                    else -> null // Ignore unknown ratings
+                    else -> null
                 }
-            }.sortedBy { it.second } // Sort by temp rating
+            }.sortedBy { it.second }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = emptyList()
+        )
 
-            // Set initial defaults
-            val initialSize = wireSizes.firstOrNull { it == "12 AWG" } ?: wireSizes.firstOrNull() ?: ""
-            val initialInsulationPair = insulationOptions.firstOrNull { it.second == 90 } ?: insulationOptions.firstOrNull()
-            val initialMaterial = materials.first()
+    // --- MutableStateFlows for User Inputs ---
+    private val _selectedMaterial = MutableStateFlow<String?>(null)
+    val selectedMaterial: StateFlow<String?> = _selectedMaterial.asStateFlow()
 
-            uiState = uiState.copy(
-                selectedMaterial = initialMaterial,
-                selectedSize = initialSize,
-                selectedInsulation = initialInsulationPair?.first ?: ""
-            )
-            // Trigger initial calculation if defaults are valid
-            if (initialSize.isNotEmpty() && initialInsulationPair != null) {
-                calculateAmpacity()
+    private val _selectedSize = MutableStateFlow<String?>(null)
+    val selectedSize: StateFlow<String?> = _selectedSize.asStateFlow()
+
+    private val _selectedInsulation = MutableStateFlow<String?>(null)
+    val selectedInsulation: StateFlow<String?> = _selectedInsulation.asStateFlow()
+
+    private val _ambientTempStr = MutableStateFlow("75") // Keep as String for TextField
+    val ambientTempStr: StateFlow<String> = _ambientTempStr.asStateFlow()
+
+    private val _numConductorsStr = MutableStateFlow("3") // Keep as String for TextField
+    val numConductorsStr: StateFlow<String> = _numConductorsStr.asStateFlow()
+
+    // --- Public functions to update the private MutableStateFlows ---
+    fun updateSelectedMaterial(material: String) {
+        _selectedMaterial.value = material
+    }
+
+    fun updateSelectedSize(size: String) {
+        _selectedSize.value = size
+    }
+
+    fun updateSelectedInsulation(insulationName: String) {
+        _selectedInsulation.value = insulationName
+    }
+
+    fun updateAmbientTempStr(temp: String) {
+        // Basic validation could be added here if needed
+        _ambientTempStr.value = temp
+    }
+
+    fun updateNumConductorsStr(count: String) {
+        // Basic validation could be added here if needed
+        _numConductorsStr.value = count
+    }
+
+    // Define the calculation logic lambda separately (now with 5 parameters)
+    private val calculationLogic: suspend (String?, String?, String?, String, String) -> WireAmpacityUiState =
+        { material, size, insulationName, ambientTempStr, numConductorsStr ->
+            Log.d("WireAmpacityVM", "Calculation logic triggered: material=$material, size=$size, insulation=$insulationName, temp=$ambientTempStr, conductors=$numConductorsStr")
+
+            // Fetch the options list from the StateFlow's current value
+            val insulationOptionsList = insulationOptions.value
+            val tempRating = insulationOptionsList.find { it.first == insulationName }?.second
+            val ambientTempC = ambientTempStr.toDoubleOrNull()
+            val numConductors = numConductorsStr.toIntOrNull()
+
+            Log.d("WireAmpacityVM", "Parsed values: tempRating=$tempRating, ambientTempC=$ambientTempC, numConductors=$numConductors")
+
+            if (material == null || size == null || tempRating == null || ambientTempC == null || numConductors == null || numConductors <= 0) {
+                Log.d("WireAmpacityVM", "Inputs invalid or incomplete. Returning error state.")
+                WireAmpacityUiState(errorMessage = "Please select material, size, insulation, valid ambient temperature, and number of conductors.")
+            } else if (ambientTempC > tempRating) {
+                Log.d("WireAmpacityVM", "Ambient temperature exceeds insulation temp rating. Returning error state.")
+                WireAmpacityUiState(errorMessage = "Ambient temperature (${ambientTempC}°C) exceeds insulation temperature rating (${tempRating}°C). Please adjust inputs.")
+            } else {
+                Log.d("WireAmpacityVM", "Inputs valid. Calling repository.calculateAmpacity...") // Simplified log message
+                try {
+                    val result = necDataRepository.calculateAmpacity(
+                        material = material,
+                        size = size,
+                        tempRating = tempRating,
+                        ambientTempC = ambientTempC,
+                        numConductors = numConductors
+                    )
+                    Log.d("WireAmpacityVM", "Calculation result: $result")
+                    WireAmpacityUiState(
+                        baseAmpacity = result.baseAmpacity,
+                        tempCorrectionFactor = result.tempCorrectionFactor,
+                        conductorAdjustmentFactor = result.conductorAdjustmentFactor,
+                        adjustedAmpacity = result.adjustedAmpacity,
+                        errorMessage = result.errorMessage
+                    )
+                } catch (e: Exception) {
+                    Log.e("WireAmpacityVM", "Calculation error", e)
+                    WireAmpacityUiState(errorMessage = "Calculation error: ${e.message}")
+                }
             }
         }
-    }
 
 
-    fun onMaterialChange(newValue: String) {
-        uiState = uiState.copy(selectedMaterial = newValue, errorMessage = null)
-        calculateAmpacity()
+    // --- Combined Input Flow and Calculation Result StateFlow ---
+    // Combine only the 5 necessary input flows
+    val uiState: StateFlow<WireAmpacityUiState> = combine(
+        _selectedMaterial,      // Flow<String?>
+        _selectedSize,          // Flow<String?>
+        _selectedInsulation,    // Flow<String?>
+        _ambientTempStr,        // Flow<String>
+        _numConductorsStr       // Flow<String>
+        // insulationOptions is removed
+    ) { material: String?, size: String?, insulationName: String?, ambientTempStr: String, numConductorsStr: String ->
+        // Call the separately defined logic function (which now takes 5 args)
+        calculationLogic(material, size, insulationName, ambientTempStr, numConductorsStr)
     }
+        .distinctUntilChanged() // Only emit if the result changes
+        .flowOn(Dispatchers.IO) // Perform calculations off the main thread
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000L),
+            initialValue = WireAmpacityUiState(errorMessage = "Select inputs to calculate.") // Changed initial message
+        )
 
-    fun onSizeChange(newValue: String) {
-        uiState = uiState.copy(selectedSize = newValue, errorMessage = null)
-        calculateAmpacity()
-    }
-
-    fun onInsulationChange(newValue: String) {
-        uiState = uiState.copy(selectedInsulation = newValue, errorMessage = null)
-        calculateAmpacity()
-    }
-
-    fun onAmbientTempChange(newValue: String) {
-        uiState = uiState.copy(ambientTempStr = newValue, errorMessage = null)
-        calculateAmpacity()
-    }
-
-    fun onNumConductorsChange(newValue: String) {
-        uiState = uiState.copy(numConductorsStr = newValue, errorMessage = null)
-        calculateAmpacity()
-    }
+    // init block is removed as its logic is now handled by the uiState flow definition.
+    // fetchDropdownValues function is removed as data fetching is handled by StateFlow initializations.
 
     fun clearInputs() {
-        // Reset to initial state, which will trigger loadInitialData implicitly if needed
-        // or just reset the fields and call calculate
-        val initialSize = wireSizes.firstOrNull { it == "12 AWG" } ?: wireSizes.firstOrNull() ?: ""
-        val initialInsulationPair = insulationOptions.firstOrNull { it.second == 90 } ?: insulationOptions.firstOrNull()
-        val initialMaterial = materials.first()
-        uiState = WireAmpacityUiState(
-            selectedMaterial = initialMaterial,
-            selectedSize = initialSize,
-            selectedInsulation = initialInsulationPair?.first ?: ""
-        )
-        calculateAmpacity() // Recalculate with defaults
+        // Reset MutableStateFlows to trigger recalculation via the combine flow
+        // Set defaults intelligently if possible, otherwise null/empty
+        _selectedMaterial.value = null // Or materials.value.firstOrNull() if you want a default
+        _selectedSize.value = null // Or a common default like "12 AWG"
+        _selectedInsulation.value = null // Or a common default like "THW/THWN/XHHW"
+        _ambientTempStr.value = "75" // Reset to default string
+        _numConductorsStr.value = "3" // Reset to default string
+        // The combined flow 'uiState' will automatically react to these changes.
     }
 
-    // Make calculate public to be called from Screen's LaunchedEffect or input changes
-    fun calculateAmpacity() {
-        viewModelScope.launch {
-            // Find the temp rating associated with the selected insulation name
-            val tempRating = insulationOptions.find { it.first == uiState.selectedInsulation }?.second
-            val ambientTempC = uiState.ambientTempStr.toDoubleOrNull()
-            val numConductors = uiState.numConductorsStr.toIntOrNull()
-
-            if (tempRating == null || ambientTempC == null || numConductors == null || numConductors <= 0) {
-                uiState = uiState.copy(
-                    errorMessage = "Invalid input values.",
-                    baseAmpacity = null, tempCorrectionFactor = null,
-                    conductorAdjustmentFactor = null, adjustedAmpacity = null
-                )
-                return@launch
-            }
-
-            var error: String? = null
-            var base: Double? = null
-            var tempFactor: Double? = null
-            var adjFactor: Double? = null
-            var adjustedAmpacityPreTermination: Double? = null
-            var finalAmpacity: Double? = null
-
-            try {
-                // 1. Fetch base ampacity from repository
-                val ampacityEntry = necDataRepository.getAmpacityEntry(uiState.selectedMaterial, uiState.selectedSize, tempRating)
-                base = ampacityEntry?.ampacity
-
-                if (base == null) {
-                    error = "Base ampacity not found for ${uiState.selectedMaterial} ${uiState.selectedSize} @ ${tempRating}°C."
-                } else {
-                    // 2. Get Correction/Adjustment Factors from repository
-                    val tempCorrectionEntry = necDataRepository.getTempCorrectionFactorEntry(tempRating, ambientTempC)
-                    tempFactor = tempCorrectionEntry?.correctionFactor
-
-                    val conductorAdjustmentEntry = necDataRepository.getConductorAdjustmentFactorEntry(numConductors)
-                    adjFactor = conductorAdjustmentEntry?.adjustmentFactor
-
-                    if (tempFactor == null) {
-                        error = "Ambient temperature correction factor not found in database."
-                    } else if (adjFactor == null) {
-                        error = "Conductor adjustment factor not found in database for $numConductors conductors."
-                    } else {
-                        // 3. Calculate Adjusted Ampacity (before termination limits)
-                        adjustedAmpacityPreTermination = base * tempFactor * adjFactor
-
-                        // 4. Apply Termination Temperature Limits (NEC 110.14(C))
-                        // Simplified logic: Assume 75C limit for > 100A or > 1 AWG, else 60C, unless 90C is allowed.
-                        // TODO: Refine this logic based on more specific rules or user input if needed.
-                        val terminationLimitRating = when {
-                            // Check if 90C is explicitly allowed (e.g., equipment listing) - Needs UI input? Assume no for now.
-                            // else -> if (base > 100 || isSizeGreaterThan1AWG(uiState.selectedSize)) 75 else 60 // Simplified check
-                             isSizeGreaterThan1AWG(uiState.selectedSize) -> 75 // Simplified: Use 75C for > 1 AWG
-                             else -> 60 // Use 60C for 1 AWG and smaller
-                        }
-
-                        // Fetch the ampacity value for the termination limit rating
-                        val terminationLimitedAmpacityEntry = necDataRepository.getAmpacityEntry(uiState.selectedMaterial, uiState.selectedSize, terminationLimitRating)
-                        val terminationLimitedAmpacity = terminationLimitedAmpacityEntry?.ampacity
-
-                        finalAmpacity = if (terminationLimitedAmpacity != null) {
-                            minOf(adjustedAmpacityPreTermination, terminationLimitedAmpacity)
-                        } else {
-                            // If the termination limit ampacity isn't found, maybe default to the adjusted value or show error?
-                            // For now, let's use the adjusted value but potentially flag it.
-                            // error = error ?: "Termination limit ampacity (${terminationLimitRating}°C) not found." // Optional error
-                            adjustedAmpacityPreTermination
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                error = "Calculation error: ${e.message}"
-                // Clear results on error
-                base = null; tempFactor = null; adjFactor = null; finalAmpacity = null;
-            }
-
-            uiState = uiState.copy(
-                baseAmpacity = base,
-                tempCorrectionFactor = tempFactor,
-                conductorAdjustmentFactor = adjFactor,
-                adjustedAmpacity = finalAmpacity, // Show the final value after termination limits
-                errorMessage = error
-            )
-        }
-    }
-
-    // Helper function to check wire size (simplified)
-    // TODO: Make this more robust based on actual size string format
-    private fun isSizeGreaterThan1AWG(size: String): Boolean {
-        return size.contains("kcmil") || size.contains("/") || size.matches(Regex("\\d+ AWG")) && (size.substringBefore(" ").toIntOrNull() ?: 100) < 1
-    }
-
-    // Helper to format results nicely (can be shared or moved)
-    private fun Double.formatResult(decimals: Int = 2): String {
-        return String.format("%.${decimals}f", this).trimEnd('0').trimEnd('.')
-    }
+    // Removed calculateAmpacity function as it's now part of the combined flow chain
+    // Removed helper functions as they are now in the repository
 }

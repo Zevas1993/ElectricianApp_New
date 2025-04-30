@@ -1,0 +1,46 @@
+{
+  "conductor_impedance": [
+    {
+      "material": "Copper",
+      "size": "14 AWG",
+      "racewayType": "EMT",
+      "resistanceAcOhmsPer1000ft": 0.240,
+      "reactanceOhmsPer1000ft": 0.058
+    },
+    {
+      "material": "Copper",
+      "size": "14 AWG",
+      "racewayType": "PVC",
+      "resistanceAcOhmsPer1000ft": 0.190,
+      "reactanceOhmsPer1000ft": 0.058
+    },
+    {
+      "material": "Copper",
+      "size": "12 AWG",
+      "racewayType": "EMT",
+      "resistanceAcOhmsPer1000ft": 0.160,
+      "reactanceOhmsPer1000ft": 0.054
+    },
+    {
+      "material": "Copper",
+      "size": "12 AWG",
+      "racewayType": "PVC",
+      "resistanceAcOhmsPer1000ft": 0.102,
+      "reactanceOhmsPer1000ft": 0.054
+    },
+    {
+      "material": "Copper",
+      "size": "10 AWG",
+      "racewayType": "EMT",
+      "resistanceAcOhmsPer1000ft": 0.100,
+      "reactanceOhmsPer1000ft": 0.050
+    },
+    {
+      "material": "Copper",
+      "size": "10 AWG",
+      "racewayType": "PVC",
+      "resistanceAcOhmsPer1000ft": 0.064,
+      "reactanceOhmsPer1000ft": 0.050
+    }
+  ]
+}

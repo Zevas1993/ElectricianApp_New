@@ -99,17 +99,18 @@ fun OhmsLawScreen(
                 enabled = uiState.resistanceEnabled, // Use state from ViewModel
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp)) // More space before output
+            Spacer(modifier = Modifier.height(8.dp)) // Consistent spacing
 
-             OutlinedTextField( // Power is always output only
-                value = uiState.powerStr, // Use state from ViewModel
-                onValueChange = { /* Read-only */ },
+            OutlinedTextField(
+                value = uiState.powerStr,
+                onValueChange = viewModel::onPowerChange, // Call ViewModel function
                 label = { Text("Power (W)") },
-                readOnly = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), // Use KeyboardType.Decimal
+                enabled = uiState.powerEnabled, // Use state from ViewModel
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp)) // Space before error/buttons
 
             uiState.errorMessage?.let { error -> // Show error message from state
                 Text(error, color = MaterialTheme.colorScheme.error)

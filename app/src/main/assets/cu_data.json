@@ -1,0 +1,59 @@
+{
+  "cu_tables": [
+    {
+      "ceilingReflectance": 80,
+      "wallReflectance": 50,
+      "floorReflectance": 20,
+      "cuValues": [
+        { "rcr": 0.0, "cu": 0.75 },
+        { "rcr": 1.0, "cu": 0.68 },
+        { "rcr": 2.0, "cu": 0.62 },
+        { "rcr": 3.0, "cu": 0.56 },
+        { "rcr": 4.0, "cu": 0.51 },
+        { "rcr": 5.0, "cu": 0.47 },
+        { "rcr": 6.0, "cu": 0.43 },
+        { "rcr": 7.0, "cu": 0.39 },
+        { "rcr": 8.0, "cu": 0.36 },
+        { "rcr": 9.0, "cu": 0.33 },
+        { "rcr": 10.0, "cu": 0.30 }
+      ]
+    },
+    {
+      "ceilingReflectance": 70,
+      "wallReflectance": 50,
+      "floorReflectance": 20,
+      "cuValues": [
+        { "rcr": 0.0, "cu": 0.70 },
+        { "rcr": 1.0, "cu": 0.64 },
+        { "rcr": 2.0, "cu": 0.58 },
+        { "rcr": 3.0, "cu": 0.53 },
+        { "rcr": 4.0, "cu": 0.48 },
+        { "rcr": 5.0, "cu": 0.44 },
+        { "rcr": 6.0, "cu": 0.40 },
+        { "rcr": 7.0, "cu": 0.37 },
+        { "rcr": 8.0, "cu": 0.34 },
+        { "rcr": 9.0, "cu": 0.31 },
+        { "rcr": 10.0, "cu": 0.28 }
+      ]
+    }
+    ,
+    {
+      "ceilingReflectance": 50,
+      "wallReflectance": 30,
+      "floorReflectance": 10,
+      "cuValues": [
+        { "rcr": 0.0, "cu": 0.60 },
+        { "rcr": 1.0, "cu": 0.55 },
+        { "rcr": 2.0, "cu": 0.50 },
+        { "rcr": 3.0, "cu": 0.46 },
+        { "rcr": 4.0, "cu": 0.42 },
+        { "rcr": 5.0, "cu": 0.38 },
+        { "rcr": 6.0, "cu": 0.35 },
+        { "rcr": 7.0, "cu": 0.32 },
+        { "rcr": 8.0, "cu": 0.29 },
+        { "rcr": 9.0, "cu": 0.27 },
+        { "rcr": 10.0, "cu": 0.25 }
+      ]
+    }
+  ]
+}

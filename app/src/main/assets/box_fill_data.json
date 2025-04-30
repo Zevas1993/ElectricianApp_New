@@ -1,0 +1,11 @@
+{
+  "box_fill_allowances": [
+    { "item_type": "Conductor",   "conductorSize": "18 AWG",  "volumeAllowanceCuIn": 1.50 },
+    { "item_type": "Conductor",   "conductorSize": "16 AWG",  "volumeAllowanceCuIn": 1.75 },
+    { "item_type": "Conductor",   "conductorSize": "14 AWG",  "volumeAllowanceCuIn": 2.00 },
+    { "item_type": "Conductor",   "conductorSize": "12 AWG",  "volumeAllowanceCuIn": 2.25 },
+    { "item_type": "Conductor",   "conductorSize": "10 AWG",  "volumeAllowanceCuIn": 2.50 },
+    { "item_type": "Support Fitting", "conductorSize": "",    "volumeAllowanceCuIn": 2.25 },
+    { "item_type": "Device",      "conductorSize": "",      "volumeAllowanceCuIn": 2.25 }
+  ]
+}

@@ -138,6 +138,15 @@ class MotorCalculatorViewModel @Inject constructor(
              }
 
 
+            val phaseString = when (phase) {
+                1 -> "Single"
+                3 -> "Three"
+                else -> {
+                    clearResults("Invalid phase selected.")
+                    return@launch
+                }
+            }
+
             var error: String? = null
             var flcValue: Double? = null
             var minConductorAmps: Double? = null
@@ -148,9 +157,9 @@ class MotorCalculatorViewModel @Inject constructor(
 
             try {
                 // 1. Get FLC from NEC Tables (430.248 / 430.250)
-                val flcEntry = necDataRepository.getMotorFLCEntry(hp, voltage, phase)
+                val flcEntry = necDataRepository.getMotorFLCEntry(hp, voltage, phaseString)
                 flcValue = flcEntry?.flc
-                if (flcValue == null) throw CalculationException("FLC not found for $hp HP, $voltage V, $phase-Phase motor.")
+                if (flcValue == null) throw CalculationException("FLC not found for $hp HP, $voltage V, $phaseString-Phase motor.")
 
                 // 2. Calculate Minimum Conductor Ampacity (430.22) - 125% of FLC
                 minConductorAmps = flcValue * 1.25
@@ -164,19 +173,47 @@ class MotorCalculatorViewModel @Inject constructor(
                 maxOverload = fla * overloadMultiplier
                 // TODO: Add logic for finding next standard size DOWN if needed per 430.32(C)
 
-                // 4. Get Max Short-Circuit/Ground-Fault Protection % (Table 430.52)
-                val protectionEntry = necDataRepository.getMotorProtectionEntry(uiState.motorType, uiState.protectionDeviceType)
-                maxProtectionPerc = protectionEntry?.maxPercentFLC
-                if (maxProtectionPerc == null) throw CalculationException("Max protection % not found for ${uiState.motorType} / ${uiState.protectionDeviceType}.")
+                // 4. Get Max Short-Circuit/Ground-Fault Protection (Table 430.52)
+                // Fetch the percentage based on the device type
+                val percentageEntry = necDataRepository.getMotorProtectionPercentageEntry(uiState.protectionDeviceType)
+                maxProtectionPerc = percentageEntry?.maxPercentFLC
 
-                // 5. Calculate Max Protection Amps
-                maxProtection = flcValue * (maxProtectionPerc / 100.0)
+                if (maxProtectionPerc == null) {
+                     error = "Max protection percentage not found for ${uiState.protectionDeviceType}."
+                } else {
+                    maxProtection = flcValue * (maxProtectionPerc / 100.0)
 
-                // 6. Find Next Standard Fuse/Breaker Size UP (NEC 240.6(A) & 430.52(C)(1) Exception No. 1)
-                standardProtectionSize = findNextStandardSize(maxProtection, uiState.standardFuseBreakerSizes)
-                if (standardProtectionSize == null) {
-                    // Handle cases where calculated value exceeds largest standard size
-                    error = "Calculated max protection (${maxProtection.formatResult(1)} A) exceeds largest standard size."
+                    when (uiState.protectionDeviceType) {
+                        "Non-Time Delay Fuse" -> {
+                            val fuseEntry = necDataRepository.getMotorProtectionNonTimeDelayFuseSizeEntry(hp, voltage)
+                            standardProtectionSize = fuseEntry?.maxFuse // Use maxFuse property
+                            if (standardProtectionSize == null) {
+                                 error = "Non-Time Delay Fuse size not found for $hp HP, $voltage V."
+                            }
+                        }
+                        "Dual Element Fuse" -> {
+                            val fuseEntry = necDataRepository.getMotorProtectionTimeDelayFuseSizeEntry(hp, voltage) // Dual Element uses Time Delay table
+                            standardProtectionSize = fuseEntry?.maxFuse // Use maxFuse property
+                             if (standardProtectionSize == null) {
+                                 error = "Dual Element Fuse size not found for $hp HP, $voltage V."
+                            }
+                        }
+                        "Inverse Time Breaker" -> {
+                            // For breakers, find the next standard size up from the calculated max amps
+                            standardProtectionSize = findNextStandardSize(maxProtection, uiState.standardFuseBreakerSizes)
+                             if (standardProtectionSize == null) {
+                                // Handle cases where calculated value exceeds largest standard size
+                                error = "Calculated max protection (${maxProtection.formatResult(1)} A) exceeds largest standard size."
+                            }
+                        }
+                        // TODO: Add "Instantaneous Trip Breaker" logic if needed
+                        else -> {
+                            error = "Unsupported protection device type: ${uiState.protectionDeviceType}"
+                            maxProtectionPerc = null
+                            maxProtection = null
+                            standardProtectionSize = null
+                        }
+                    }
                 }
 
 
@@ -203,7 +240,8 @@ class MotorCalculatorViewModel @Inject constructor(
     }
 
      // Helper to find the next standard OCPD size UP
-    private fun findNextStandardSize(calculatedAmps: Double, standardSizes: List<Int>): Int? {
+    private fun findNextStandardSize(calculatedAmps: Double?, standardSizes: List<Int>): Int? {
+        if (calculatedAmps == null) return null
         return standardSizes.firstOrNull { it >= calculatedAmps }
     }
 

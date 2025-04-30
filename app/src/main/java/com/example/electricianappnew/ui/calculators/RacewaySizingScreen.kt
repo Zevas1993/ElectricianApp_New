@@ -22,9 +22,11 @@ import androidx.compose.foundation.text.KeyboardOptions // Import KeyboardOption
 import androidx.compose.material3.Scaffold // Import Scaffold
 import androidx.compose.material3.TopAppBar // Import TopAppBar
 import java.util.Locale // Import Locale
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // Import lifecycle-aware collection
 import com.example.electricianappnew.data.model.WireEntry // Import WireEntry from central model location
 import com.example.electricianappnew.ui.common.WireInputRow // Import shared
 import com.example.electricianappnew.ui.common.formatCalculationResult // Import shared
+import android.util.Log // Import Log
 
 // Assuming WireEntry data class is accessible (defined in ConduitFillScreen or common location)
 // Assuming WireInputRow composable is accessible (defined in ConduitFillScreen or common location)
@@ -37,7 +39,32 @@ fun RacewaySizingScreen(
     viewModel: RacewaySizingViewModel = hiltViewModel(),
     navController: NavController // Add NavController parameter
 ) {
-    val uiState = viewModel.uiState // Observe state directly
+    // Collect state flows using lifecycle-aware collection
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle() // Collect UI state
+    // Note: racewayTypeNames and wireTypeNames are currently mutableStateOf, not StateFlow.
+    // We'll keep observing them directly for now, but ideally they'd be StateFlows too.
+    // val racewayTypeNames by viewModel.racewayTypeNames.collectAsStateWithLifecycle() // Collect raceway types
+    // val wireTypeNames by viewModel.wireTypeNames.collectAsStateWithLifecycle() // Collect wire types
+    val conductorSizes by viewModel.conductorSizes.collectAsStateWithLifecycle() // Collect conductor sizes
+
+    // Log collected state changes (optional, for debugging)
+    LaunchedEffect(uiState) { Log.d("RacewaySizingScreen", "UI State updated: $uiState") }
+    LaunchedEffect(viewModel.racewayTypeNames) { Log.d("RacewaySizingScreen", "Raceway Types updated: ${viewModel.racewayTypeNames}") }
+    LaunchedEffect(viewModel.wireTypeNames) { Log.d("RacewaySizingScreen", "Wire Types updated: ${viewModel.wireTypeNames}") }
+    LaunchedEffect(conductorSizes) { Log.d("RacewaySizingScreen", "Conductor Sizes collected: $conductorSizes") }
+
+    // --- LaunchedEffects for Initial/Default Selections (Optional but good practice) ---
+    // Select first raceway type when list loads and none is selected
+    LaunchedEffect(viewModel.racewayTypeNames) {
+        if (uiState.selectedRacewayType.isBlank() && viewModel.racewayTypeNames.isNotEmpty()) {
+            Log.d("RacewaySizingScreen", "Selecting initial raceway type: ${viewModel.racewayTypeNames.first()}")
+            viewModel.onRacewayTypeChange(viewModel.racewayTypeNames.first())
+        }
+    }
+
+    // Ensure initial wire entry uses default type/size once lists are loaded
+    // This logic is mostly handled in the ViewModel's init now, but we could add
+    // checks here if needed, especially if adding entries dynamically.
 
     Scaffold(
         topBar = {
@@ -69,8 +96,8 @@ fun RacewaySizingScreen(
             // Raceway Type Selection
             ExposedDropdownMenuBoxInput(
                 label = "Raceway Type",
-                options = viewModel.racewayTypeNames,
-                selectedOption = uiState.selectedRacewayType,
+                options = viewModel.racewayTypeNames, // Use directly observed mutableStateOf list
+                selectedOption = uiState.selectedRacewayType, // Use collected state
                 onOptionSelected = viewModel::onRacewayTypeChange,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -82,11 +109,12 @@ fun RacewaySizingScreen(
                 itemsIndexed(uiState.wireEntries, key = { _, item -> item.id }) { index, entry ->
                     // Content for each wire entry item
                     WireInputRow(
-                        entry = entry,
-                        wireTypeOptions = viewModel.wireTypeNames, // Pass options
-                        wireSizeOptions = viewModel.availableWireSizes, // Pass options
+                        entry = entry, // Use entry from collected uiState.wireEntries
+                        wireTypeOptions = viewModel.wireTypeNames, // Use directly observed mutableStateOf list
+                        wireSizeOptions = conductorSizes, // Pass the collected list of all conductor sizes
                         onEntryChange = { updatedEntry -> viewModel.updateWireEntry(index, updatedEntry) },
                         onRemoveClick = { viewModel.removeWireEntry(index) }
+                        // wireTypeEnabled is implicitly true here unless we add loading state to this screen too
                     )
                     HorizontalDivider()
                 }
