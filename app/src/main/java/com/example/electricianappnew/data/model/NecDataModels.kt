@@ -100,11 +100,11 @@ data class NecConduitEntry(
 )
 data class NecWireAreaEntry(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    @SerializedName("insulation_type") // Map JSON key to this field
+    @SerializedName("insulationType") // Map JSON key to this field
     @ColumnInfo(name = "insulation_type") val insulationType: String?, // e.g., "THHN", "XHHW", null for bare
     @SerializedName("size") // Map JSON key (even if same, good practice)
     @ColumnInfo(name = "size") val size: String,
-    @SerializedName("area_in2") // Map JSON key to this field
+    @SerializedName("areaSqIn") // Map JSON key to this field
     @ColumnInfo(name = "area_in2") val areaSqIn: Double
 )
 
@@ -124,11 +124,12 @@ data class NecBoxFillEntry(
 // --- NEC Table 310.15(B) Ambient Temperature Correction Factors ---
 @Entity(tableName = "nec_temp_corrections", primaryKeys = ["temp_rating", "ambient_temp_celsius"])
 data class NecTempCorrectionEntry(
-    @SerializedName("temp_rating") // Map JSON key
+    val id: Long = 0,
+    @SerializedName("tempRating") // Map JSON key
     @ColumnInfo(name = "temp_rating") val tempRating: Int, // 60, 75, 90
-    @SerializedName("ambient_temp_celsius") // Map JSON key
-    @ColumnInfo(name = "ambient_temp_celsius") val ambientTempCelsius: Double, // The temperature value from the table row
-    @SerializedName("correction_factor") // Map JSON key
+    @SerializedName("ambientTempCelsius") // Map JSON key
+    @ColumnInfo(name = "ambient_temp_celsius") val ambientTempCelsius: Double,
+    @SerializedName("correctionFactor") // Map JSON key
     @ColumnInfo(name = "correction_factor") val correctionFactor: Double
 )
 
@@ -185,11 +186,11 @@ data class NecConductorImpedanceEntry(
     @ColumnInfo(name = "material") val material: String, // "Copper" or "Aluminum"
     @SerializedName("size") // Map JSON key
     @ColumnInfo(name = "size") val size: String, // e.g., "14 AWG", "250 kcmil"
-    @SerializedName("raceway_type") // Map JSON key
+    @SerializedName("racewayType") // Map JSON key
     @ColumnInfo(name = "raceway_type") val racewayType: String, // e.g., "Steel", "Aluminum", "PVC"
-    @SerializedName("resistance_ac_ohms_1000ft") // Map JSON key
+    @SerializedName("resistanceAcOhmsPer1000ft") // Map JSON key
     @ColumnInfo(name = "resistance_ac_ohms_1000ft") val resistanceAcOhmsPer1000ft: Double, // Effective Z at 0.85 PF
-    @SerializedName("reactance_xl_ohms_1000ft") // Map JSON key
+    @SerializedName("reactanceOhmsPer1000ft") // Map JSON key
     @ColumnInfo(name = "reactance_xl_ohms_1000ft") val reactanceOhmsPer1000ft: Double // Reactance (Xl)
 )
 

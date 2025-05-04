@@ -19,7 +19,7 @@
 - **Mobile Environment:** Development is constrained by mobile device resources (CPU, memory, battery) and screen size variations.
 - **Offline Functionality:** Core features, especially calculators and NEC references, should function offline.
 - **Data Storage:** Local data storage using Room is the primary method for persistence.
-- **NEC Data Format:** NEC data is currently stored and loaded from JSON files, requiring careful parsing and mapping to database entities.
+- **NEC Data Format:** NEC data is currently stored and loaded from JSON files, requiring careful parsing and mapping to database entities. The correct parsing and database population of these JSON files is critical for the functionality of the calculators, and the data loading and basic calculation issues in the Conduit Fill and Box Fill calculators have been addressed.
 
 ## Dependencies
 Key dependencies are managed in the `app/build.gradle` file and include:

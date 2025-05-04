@@ -7,6 +7,17 @@ import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,6 +37,7 @@ import com.example.electricianappnew.ui.common.WireInputRow
 import com.example.electricianappnew.ui.common.formatCalculationResult
 // import java.util.Locale // Not explicitly used
 import com.example.electricianappnew.data.model.WireEntry
+import com.example.electricianappnew.ui.calculators.viewmodel.UiEvent // Import UiEvent
 
 // Removed NecConduitWireData object as data comes from ViewModel/Repository
 
@@ -42,10 +54,36 @@ fun ConduitFillScreen(
     val conduitTypeNames by viewModel.conduitTypeNames.collectAsStateWithLifecycle()
     val availableConduitSizes by viewModel.availableConduitSizes.collectAsStateWithLifecycle()
     val wireTypeNames by viewModel.wireTypeNames.collectAsStateWithLifecycle() // Insulation types
-    val conductorSizes by viewModel.conductorSizes.collectAsStateWithLifecycle() // Wire gauge sizes
+    // Removed conductorSizes as it's now dynamic per wire entry
 
-    // Removed LaunchedEffects for logging state changes.
-    // Removed LaunchedEffects for initial selections. UI will react to ViewModel state.
+    // Collect the map of available conductor sizes flows
+    val availableConductorSizesMap by viewModel.availableConductorSizesForEntry.collectAsStateWithLifecycle()
+
+    // Log the collected states to see what the UI is observing
+    Log.d("ConduitFillScreen", "UI State: $uiState")
+    Log.d("ConduitFillScreen", "Conduit Types: $conduitTypeNames")
+    Log.d("ConduitFillScreen", "Available Conduit Sizes: $availableConduitSizes")
+    Log.d("ConduitFillScreen", "Wire Types: $wireTypeNames")
+    Log.d("ConduitFillScreen", "Wire Entries: ${uiState.wireEntries}")
+
+
+    // Snackbar host state for displaying messages
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Observe UI events from ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is UiEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(
+                        message = event.message,
+                        duration = SnackbarDuration.Short
+                    )
+                }
+                // Handle other UiEvents here
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -57,7 +95,8 @@ fun ConduitFillScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) } // Attach SnackbarHost to Scaffold
     ) { paddingValues ->
         Column(
             modifier = modifier
@@ -101,25 +140,33 @@ fun ConduitFillScreen(
 
             // Removed wire types loading indicator
 
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                itemsIndexed(uiState.wireEntries, key = { _, item -> item.id }) { index, entry ->
-                    WireInputRow(
-                        entry = entry,
-                        wireTypeOptions = wireTypeNames, // Use collected insulation types
-                        wireSizeOptions = conductorSizes, // Use collected conductor sizes (gauge)
-                        onEntryChange = { updatedEntry -> viewModel.updateWireEntry(index, updatedEntry) },
-                        onRemoveClick = { viewModel.removeWireEntry(index) }
-                        // Removed wireTypeEnabled - dropdown enabled state handled internally by WireInputRow based on options
-                    )
-                    HorizontalDivider()
+            // Use a Box to manage the layout of the LazyColumn and potentially other elements
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                LazyColumn(modifier = Modifier.fillMaxSize()) { // Ensure LazyColumn fills the available space
+                    itemsIndexed(uiState.wireEntries, key = { _, item -> item.id }) { index, entry ->
+                        // Get the StateFlow for the available sizes for this specific wire entry
+                        val sizesFlow = viewModel.getAvailableConductorSizesFlow(index)
+                        // Collect the list of sizes from this flow
+                        val conductorSizesForEntry by sizesFlow.collectAsStateWithLifecycle()
+
+                        WireInputRow(
+                            entry = entry,
+                            wireTypeOptions = wireTypeNames, // Use collected insulation types
+                            wireSizeOptions = conductorSizesForEntry, // Use collected sizes for this specific entry
+                            onEntryChange = { updatedEntry -> viewModel.updateWireEntry(index, updatedEntry) },
+                            onRemoveClick = { viewModel.removeWireEntry(index) }
+                        )
+                        HorizontalDivider()
+                    }
                 }
             }
+
 
             Button(
                 onClick = viewModel::addWireEntry,
                 modifier = Modifier.align(Alignment.End),
-                // Enable adding only when necessary dropdown data is loaded
-                enabled = wireTypeNames.isNotEmpty() && conductorSizes.isNotEmpty()
+                // Enable adding only when necessary dropdown data is loaded (wire types)
+                enabled = wireTypeNames.isNotEmpty() // This is the condition we are checking
             ) {
                 Text("Add Conductor")
             }
@@ -137,11 +184,11 @@ fun ConduitFillScreen(
                 Text(text = "OVERFILL!", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.titleMedium)
             }
 
-            // Error Message Display
-            uiState.errorMessage?.let { error ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = error, color = MaterialTheme.colorScheme.error)
-            }
+            // Removed old Error Message Display
+            // uiState.errorMessage?.let { error ->
+            //     Spacer(modifier = Modifier.height(8.dp))
+            //     Text(text = error, color = MaterialTheme.colorScheme.error)
+            // }
         }
     }
 }

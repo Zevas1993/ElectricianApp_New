@@ -1,7 +1,6 @@
 package com.example.electricianappnew.ui.calculators.viewmodel
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -9,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.electricianappnew.data.model.NecBoxFillEntry
 import com.example.electricianappnew.data.repository.NecDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,14 +47,22 @@ class BoxFillViewModel @Inject constructor(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            conductorSizes = necDataRepository.getDistinctBoxFillConductorSizes()
-            // Initialize maps with available sizes, count set to "0"
-            val initialConductorCounts = conductorSizes.associateWith { "0" }
-            val initialGroundCounts = conductorSizes.associateWith { "0" }
+            val fetchedSizes = necDataRepository.getDistinctBoxFillConductorSizes()
+
+            conductorSizes = fetchedSizes
+            android.util.Log.d("BoxFillViewModel", "Loaded sizes: $conductorSizes")
+
+            // Build your maps correctly
+            val initialConductorCounts: Map<String, String> =
+                fetchedSizes.associateWith { "0" }
+            val initialGroundCounts: Map<String, String> =
+                fetchedSizes.associateWith { "0" }
+
             uiState = uiState.copy(
                 conductorCounts = initialConductorCounts,
-                groundCounts = initialGroundCounts
+                groundCounts    = initialGroundCounts
             )
+            android.util.Log.d("BoxFillViewModel", "Initialized counts keys: ${uiState.conductorCounts.keys}")
         }
     }
 
@@ -115,10 +124,7 @@ class BoxFillViewModel @Inject constructor(
                         if (entry == null) throw CalculationException("Volume allowance not found for $size conductor.")
                         calculatedVolume += count * entry.volumeAllowanceCuIn
                         largestConductorSize = getLargerSize(largestConductorSize, size)
-                        // Track largest connected to device if devices exist
-                        if ((uiState.numDevicesStr.toIntOrNull() ?: 0) > 0) {
-                             largestDeviceConductorSize = getLargerSize(largestDeviceConductorSize, size)
-                        }
+                        // Removed conditional update for largestDeviceConductorSize here
                     }
                 }
 
@@ -129,28 +135,44 @@ class BoxFillViewModel @Inject constructor(
                 // Was step 4, now step 2
                 val numDevices = uiState.numDevicesStr.toIntOrNull() ?: 0
                 if (numDevices > 0) {
-                     if (largestDeviceConductorSize == null) throw CalculationException("Cannot calculate device fill without conductors connected to them.")
-                     // Safely store the non-null value in a new variable to avoid smart cast issues
-                     val deviceConductorSize = largestDeviceConductorSize
-                     val entry = necDataRepository.getBoxFillEntry("Device", deviceConductorSize!!) // Add non-null assertion
-                         ?: necDataRepository.getBoxFillEntry("Device", "N/A") // Fallback
-                     if (entry == null) throw CalculationException("Volume allowance not found for devices (based on $deviceConductorSize conductor).")
-                     calculatedVolume += numDevices * entry.volumeAllowanceCuIn * entry.countMultiplier // Multiplier is usually 2
-                 }
+                    // Find the largest conductor size among all entered conductors if devices are present
+                    var tempLargestDeviceConductorSize: String? = null
+                    uiState.conductorCounts.forEach { (size, countStr) ->
+                        val count = countStr.toIntOrNull() ?: 0
+                        if (count > 0) {
+                            tempLargestDeviceConductorSize = getLargerSize(tempLargestDeviceConductorSize, size)
+                        }
+                    }
+
+                    if (tempLargestDeviceConductorSize == null) {
+                        error = "Cannot calculate device fill without conductors connected to them."
+                        // Do not throw exception, continue with other calculations if possible
+                    } else {
+                        // Safely store the non-null value in a new variable to avoid smart cast issues
+                        val deviceConductorSize = tempLargestDeviceConductorSize
+                        val entry = necDataRepository.getBoxFillEntry("Device", deviceConductorSize!!) // Add non-null assertion
+                            ?: necDataRepository.getBoxFillEntry("Device", "N/A") // Fallback
+                        if (entry == null) {
+                             error = "Volume allowance not found for devices (based on $deviceConductorSize conductor)."
+                        } else {
+                            calculatedVolume += numDevices * entry.volumeAllowanceCuIn * entry.countMultiplier // Multiplier is usually 2
+                        }
+                    }
+                }
 
                 // 3. Equipment Grounding Conductor Fill (314.16(B)(5)) - One allowance based on largest EGC
                 // Was step 5, now step 3
                 uiState.groundCounts.forEach { (size, countStr) ->
-                     val count = countStr.toIntOrNull() ?: 0
-                     if (count > 0) {
-                         largestGroundSize = getLargerSize(largestGroundSize, size)
-                     }
-                 }
+                    val count = countStr.toIntOrNull() ?: 0
+                    if (count > 0) {
+                        largestGroundSize = getLargerSize(largestGroundSize, size)
+                    }
+                }
                 if (largestGroundSize != null) {
                     // Safely store the non-null value in a new variable to avoid smart cast issues
                     val groundSize = largestGroundSize
                     val entry = necDataRepository.getBoxFillEntry("Ground", groundSize!!) // Add non-null assertion
-                         ?: necDataRepository.getBoxFillEntry("Ground", "N/A") // Fallback
+                        ?: necDataRepository.getBoxFillEntry("Ground", "N/A") // Fallback
                     if (entry == null) throw CalculationException("Volume allowance not found for grounding conductors (based on $groundSize).")
                     calculatedVolume += entry.volumeAllowanceCuIn // Only add ONCE for all grounds
                 }

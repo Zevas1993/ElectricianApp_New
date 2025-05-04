@@ -39,6 +39,7 @@ interface NecDataDao {
     @Query("SELECT * FROM nec_temp_corrections") // Added: Get all temp correction entries
     fun getAllNecTempCorrectionEntries(): Flow<List<NecTempCorrectionEntry>>
 
+
     // --- Conductor Adjustment Factors (Table 310.15(C)) ---
     // Assuming a table structure like: min_conductors, max_conductors, adjustment_factor
     @Query("SELECT * FROM nec_conductor_adjustments WHERE :numConductors BETWEEN min_conductors AND max_conductors LIMIT 1")
@@ -47,14 +48,7 @@ interface NecDataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConductorAdjustmentEntries(entries: List<NecConductorAdjustmentEntry>) // Assuming NecConductorAdjustmentEntry model exists
 
-    @Query("SELECT * FROM nec_conductor_adjustments") // Added: Get all conductor adjustment entries
-    fun getAllNecConductorAdjustmentEntries(): Flow<List<NecConductorAdjustmentEntry>>
-
-
-    // --- Conductor Properties (Table 8) ---
-    @Query("SELECT * FROM nec_conductor_properties WHERE material = :material AND size = :size")
-    suspend fun getConductorProperties(material: String, size: String): NecConductorEntry?
-
+    // --- Full NEC Code Inserts ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConductorEntries(entries: List<NecConductorEntry>)
 
@@ -184,13 +178,6 @@ interface NecDataDao {
 
     @Query("SELECT * FROM nec_conductor_impedance") // Added: Get all conductor impedance entries
     fun getAllNecConductorImpedanceEntries(): Flow<List<NecConductorImpedanceEntry>>
-
-    // Removed functions related to NecAcImpedanceEntry
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAcImpedanceEntries(entries: List<NecAcImpedanceEntry>)
-
-    @Query("SELECT * FROM nec_ac_impedance")
-    fun getAllAcImpedanceEntries(): Flow<List<NecAcImpedanceEntry>>
 
     // --- Full NEC Code Inserts ---
     @Insert(onConflict = OnConflictStrategy.REPLACE)

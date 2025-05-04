@@ -11,6 +11,7 @@ import javax.inject.Inject
 import kotlin.math.pow
 import com.example.electricianappnew.data.repository.AmpacityCalculationResult
 import kotlinx.coroutines.Dispatchers // Import Dispatchers
+import kotlin.math.round // Import round function
 // Removed duplicate Log import
 
 // Data class for UI State (now represents the calculation result)
@@ -108,7 +109,7 @@ class WireAmpacityViewModel @Inject constructor(
             // Fetch the options list from the StateFlow's current value
             val insulationOptionsList = insulationOptions.value
             val tempRating = insulationOptionsList.find { it.first == insulationName }?.second
-            val ambientTempC = ambientTempStr.toDoubleOrNull()
+            var ambientTempC = ambientTempStr.toDoubleOrNull() // Use var to allow modification
             val numConductors = numConductorsStr.toIntOrNull()
 
             Log.d("WireAmpacityVM", "Parsed values: tempRating=$tempRating, ambientTempC=$ambientTempC, numConductors=$numConductors")
@@ -120,13 +121,17 @@ class WireAmpacityViewModel @Inject constructor(
                 Log.d("WireAmpacityVM", "Ambient temperature exceeds insulation temp rating. Returning error state.")
                 WireAmpacityUiState(errorMessage = "Ambient temperature (${ambientTempC}°C) exceeds insulation temperature rating (${tempRating}°C). Please adjust inputs.")
             } else {
+                // Round ambient temperature to the nearest 5°C increment
+                ambientTempC = roundToNearestFive(ambientTempC)
+                Log.d("WireAmpacityVM", "Rounded ambientTempC: $ambientTempC") // Log the rounded value
+
                 Log.d("WireAmpacityVM", "Inputs valid. Calling repository.calculateAmpacity...") // Simplified log message
                 try {
                     val result = necDataRepository.calculateAmpacity(
                         material = material,
                         size = size,
                         tempRating = tempRating,
-                        ambientTempC = ambientTempC,
+                        ambientTempC = ambientTempC, // Use the rounded value
                         numConductors = numConductors
                     )
                     Log.d("WireAmpacityVM", "Calculation result: $result")
@@ -178,6 +183,11 @@ class WireAmpacityViewModel @Inject constructor(
         _ambientTempStr.value = "75" // Reset to default string
         _numConductorsStr.value = "3" // Reset to default string
         // The combined flow 'uiState' will automatically react to these changes.
+    }
+
+    // Helper function to round a Double to the nearest 5
+    private fun roundToNearestFive(value: Double): Double {
+        return round(value / 5.0) * 5.0
     }
 
     // Removed calculateAmpacity function as it's now part of the combined flow chain

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 49,
-    "identityHash": "0e41976b598fdbcab65ace7955b8b260",
+    "identityHash": "950a7ed6d6361dbe87870d402461440f",
     "entities": [
       {
         "tableName": "jobs",
@@ -764,8 +764,14 @@
       },
       {
         "tableName": "nec_temp_corrections",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`temp_rating` INTEGER NOT NULL, `ambient_temp_celsius` REAL NOT NULL, `correction_factor` REAL NOT NULL, PRIMARY KEY(`temp_rating`, `ambient_temp_celsius`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `temp_rating` INTEGER NOT NULL, `ambient_temp_celsius` REAL NOT NULL, `correction_factor` REAL NOT NULL, PRIMARY KEY(`temp_rating`, `ambient_temp_celsius`))",
         "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
           {
             "fieldPath": "tempRating",
             "columnName": "temp_rating",
@@ -1199,7 +1205,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0e41976b598fdbcab65ace7955b8b260')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '950a7ed6d6361dbe87870d402461440f')"
     ]
   }
 }

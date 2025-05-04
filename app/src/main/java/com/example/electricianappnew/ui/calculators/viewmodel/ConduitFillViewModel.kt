@@ -11,22 +11,32 @@ import com.example.electricianappnew.data.repository.NecDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.* // Import Flow operators
 import kotlinx.coroutines.launch
+// import kotlin.coroutines.currentCoroutineContext // Import currentCoroutineContext - REMOVED
 import java.util.Locale
 import javax.inject.Inject
 import android.util.Log
 import com.example.electricianappnew.data.model.*
 import com.example.electricianappnew.data.model.WireEntry
+import kotlinx.coroutines.channels.BufferOverflow // ADDED
+import kotlinx.coroutines.flow.MutableSharedFlow // ADDED
+import kotlinx.coroutines.flow.asSharedFlow // ADDED
+
+// Define UI events for one-shot actions like showing errors
+sealed class UiEvent {
+    data class ShowError(val message: String) : UiEvent()
+    // Add other UI events here as needed
+}
 
 // Data class for UI State (excluding dropdown lists, which are separate state in VM)
 data class ConduitFillUiState(
     val selectedConduitTypeName: String = "",
     val selectedConduitSize: String = "",
-    val wireEntries: List<WireEntry> = listOf(WireEntry()), // Start with one wire
+    val wireEntries: List<WireEntry> = emptyList(), // Start with an empty list
     val totalWireArea: Double? = null,
     val allowableFillArea: Double? = null,
     val fillPercentage: Double? = null,
-    val isOverfill: Boolean = false,
-    val errorMessage: String? = null
+    val isOverfill: Boolean = false
+    // Removed errorMessage - now handled by UiEvent
     // Removed loading states - handled by initialValue in stateIn
 )
 
@@ -38,148 +48,219 @@ class ConduitFillViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ConduitFillUiState())
     val uiState: StateFlow<ConduitFillUiState> = _uiState.asStateFlow()
 
+    // SharedFlow for one-shot UI events
+    private val _uiEvent = MutableSharedFlow<UiEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val uiEvent = _uiEvent.asSharedFlow()
+
     // --- StateFlows for Dropdown Options ---
 
     // Conduit Types
     val conduitTypeNames: StateFlow<List<String>> = necDataRepository.getDistinctConduitTypes()
-        // .onStart { Log.d("ConduitFillVM", "Starting conduit types flow...") } // Removed Log
-        // .onEach { Log.d("ConduitFillVM", "Received conduit types: $it") } // Removed Log
         .catch { e ->
-            Log.e("ConduitFillVM", "Error fetching conduit types", e) // Keep error log
-            _uiState.update { it.copy(errorMessage = "Error loading conduit types: ${e.message}") } // Removed loading state update
-            emit(emptyList()) // Emit empty list on error
-        }
-        // Removed onCompletion loading state update
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    // Removed conductorMaterials flow
-
-    // Conductor Sizes (Distinct sizes from nec_wire_areas table)
-    val conductorSizes: StateFlow<List<String>> = necDataRepository.getAllNecWireAreaEntries()
-        .map { entries ->
-            // Extract distinct sizes and sort them (implement custom sort if needed)
-            entries.map { it.size }.distinct().sorted() // Simple alphabetical sort for now
-        }
-        .catch { e ->
-            Log.e("ConduitFillVM", "Error fetching distinct conductor sizes from wire areas", e)
-            _uiState.update { it.copy(errorMessage = "Error loading conductor sizes: ${e.message}") }
+            Log.e("ConduitFillVM", "Error fetching conduit types", e)
+            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Error loading conduit types: ${e.message}")) }
             emit(emptyList())
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
-
-    // Wire Insulation Types (from nec_wire_areas) - This is correct
+    // Wire Insulation Types (from nec_wire_areas)
     val wireTypeNames: StateFlow<List<String>> = necDataRepository.getDistinctWireTypes()
-        // .onStart { Log.d("ConduitFillVM", "Starting wire insulation types flow...") } // Removed Log
-        // .onEach { Log.d("ConduitFillVM", "Received wire insulation types: $it") } // Removed Log
         .catch { e ->
-            Log.e("ConduitFillVM", "Error fetching wire types", e) // Keep error log
-            _uiState.update { it.copy(errorMessage = "Error loading wire types: ${e.message}") } // Removed loading state update
+            Log.e("ConduitFillVM", "Error fetching wire types", e)
+            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Error loading wire types: ${e.message}")) }
             emit(emptyList())
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
     // Available Conduit Sizes (depends on selectedConduitTypeName)
-    // Use flatMapLatest to react to changes in selectedConduitTypeName
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val availableConduitSizes: StateFlow<List<String>> = _uiState
         .map { it.selectedConduitTypeName } // Observe changes in selected type name
         .distinctUntilChanged() // Only react when the name actually changes
-        .onEach { typeName -> Log.d("ConduitFillVM", "flatMapLatest: Input typeName changed to: '$typeName'") } // ADDED Log
+        .onEach { typeName -> Log.d("ConduitFillVM", "flatMapLatest: Input typeName changed to: '$typeName'") }
         .flatMapLatest { typeName -> // Switch to the new flow when typeName changes
-            Log.d("ConduitFillVM", "flatMapLatest: Executing lambda for typeName: '$typeName'") // ADDED Log
+            Log.d("ConduitFillVM", "flatMapLatest: Executing lambda for typeName: '$typeName'")
             if (typeName.isBlank()) {
-                Log.d("ConduitFillVM", "flatMapLatest: typeName is blank, returning empty list flow.") // ADDED Log
+                Log.d("ConduitFillVM", "flatMapLatest: typeName is blank, returning empty list flow.")
                 flowOf(emptyList()) // Return empty list if no type selected
             } else {
-                Log.d("ConduitFillVM", "flatMapLatest: typeName is '$typeName', calling repository...") // ADDED Log
-                // Removed loading state update
+                Log.d("ConduitFillVM", "flatMapLatest: typeName is '$typeName', calling repository...")
                 necDataRepository.getDistinctConduitSizesForType(typeName)
-                    .onStart { Log.d("ConduitFillVM", "flatMapLatest: Starting conduit sizes flow for type: '$typeName'") } // ADDED Log
-                    .onEach { sizes -> Log.d("ConduitFillVM", "flatMapLatest: Received conduit sizes for '$typeName': $sizes") } // ADDED Log
+                    .onStart { Log.d("ConduitFillVM", "flatMapLatest: Starting conduit sizes flow for type: '$typeName'") }
+                    .onEach { sizes -> Log.d("ConduitFillVM", "flatMapLatest: Received conduit sizes for '$typeName': $sizes") }
                     .catch { e ->
-                        Log.e("ConduitFillVM", "flatMapLatest: Error fetching conduit sizes for $typeName", e) // Keep error log
-                        _uiState.update { it.copy(errorMessage = "Error loading sizes for $typeName: ${e.message}") } // Removed loading state update
+                        Log.e("ConduitFillVM", "flatMapLatest: Error fetching conduit sizes for $typeName", e)
+                        viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Error loading sizes for $typeName: ${e.message}")) }
                         emit(emptyList())
                     }
-                    // Removed onCompletion loading state update
             }
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
-    // Removed init block, observeInitialSelections, and fetchWireSizesForType
-    // Initial state will be handled by StateFlow initial values and UI collection
+    // Available Conductor Sizes (depends on the wire type of each WireEntry)
+    // This will be a map from WireEntry index to a StateFlow of available sizes for that entry's type
+    // We will manage this in the ViewModel and expose a way for the UI to get the flow for each entry.
+    private val _availableConductorSizesForEntry = MutableStateFlow<Map<Int, StateFlow<List<String>>>>(emptyMap())
+    val availableConductorSizesForEntry: StateFlow<Map<Int, StateFlow<List<String>>>> = _availableConductorSizesForEntry.asStateFlow()
+
+    // Function to get the StateFlow of sizes for a specific wire entry index
+    fun getAvailableConductorSizesFlow(index: Int): StateFlow<List<String>> {
+        // If the flow for this index doesn't exist, create it
+        return _availableConductorSizesForEntry.value[index] ?: createConductorSizesFlowForEntry(index)
+    }
+
+    // Private helper to create the conductor sizes flow for a given entry index
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun createConductorSizesFlowForEntry(index: Int): StateFlow<List<String>> {
+        val flow = _uiState
+            .map { it.wireEntries.getOrNull(index)?.type ?: "" } // Observe the type of the wire entry at this index
+            .distinctUntilChanged() // Only react when the type actually changes
+            .flatMapLatest { wireType -> // Switch to the new flow when wireType changes
+                if (wireType.isBlank()) {
+                    flowOf(emptyList()) // Return empty list if no type selected
+                } else {
+                    necDataRepository.getDistinctWireSizesForType(wireType) // Use the new repository method
+                        .catch { e ->
+                            Log.e("ConduitFillVM", "Error fetching conductor sizes for type $wireType at index $index", e)
+                            // Note: We don't emit a UI event here to avoid overwhelming the user with errors for individual wire entries.
+                            // Errors related to specific wire entries will be handled during the calculation phase.
+                            emit(emptyList())
+                        }
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.Eagerly, // Change to Eagerly
+                initialValue = emptyList()
+            )
+
+        // Add the created flow to the map
+        _availableConductorSizesForEntry.update { it + (index to flow) }
+        return flow
+    }
+
+init {
+    Log.d("ConduitFillVM", "init: ViewModel init block started.")
+    viewModelScope.launch {
+        Log.d("ConduitFillVM", "init: Waiting for isDataLoaded...")
+        // Wait for the main data loaded flag (from DatabaseCallback)
+        // Although the repository reads from JSON, this flag might still be
+        // a useful signal that initial setup is complete.
+        necDataRepository.isDataLoaded.filter { it }.first()
+        Log.d("ConduitFillVM", "init: isDataLoaded is true. Proceeding.")
+
+        Log.d("ConduitFillVM", "init: Collecting first non-empty wire types. Current value: ${wireTypeNames.value}")
+        // Collect the first non-empty list of wire types
+        val wireTypes = wireTypeNames.filter { it.isNotEmpty() }.first()
+        Log.d("ConduitFillVM", "init: Collected wire types: $wireTypes")
+        val defaultWireType = wireTypes.firstOrNull() ?: ""
+
+        if (defaultWireType.isNotBlank()) {
+            Log.d("ConduitFillVM", "init: Default wire type found: $defaultWireType. Creating conductor sizes flow.")
+            // Create the flow for conductor sizes for the initial entry (index 0)
+            val sizesForDefaultTypeFlow = createConductorSizesFlowForEntry(0)
+            Log.d("ConduitFillVM", "init: Collecting first non-empty conductor sizes for type: $defaultWireType. Current value: ${sizesForDefaultTypeFlow.value}")
+            // Collect the first non-empty list of sizes for the default wire type
+            val conductorSizes = sizesForDefaultTypeFlow.filter { it.isNotEmpty() }.first()
+            Log.d("ConduitFillVM", "init: Collected conductor sizes: $conductorSizes")
+            val defaultConductorSize = conductorSizes.firstOrNull() ?: ""
+
+            if (defaultConductorSize.isNotBlank()) {
+                Log.d("ConduitFillVM", "init: Default conductor size found: $defaultConductorSize. Creating initial wire entry.")
+                val initialEntry = WireEntry(type = defaultWireType, size = defaultConductorSize)
+                _uiState.update { currentState ->
+                    currentState.copy(wireEntries = listOf(initialEntry))
+                }
+                Log.d("ConduitFillVM", "init: Initial wire entry added: $initialEntry")
+            } else {
+                Log.w("ConduitFillVM", "init: Could not determine default conductor size for type: $defaultWireType")
+            }
+        } else {
+            Log.w("ConduitFillVM", "init: Could not determine default wire type.")
+        }
+    }
+}
 
     fun onConduitTypeChange(newTypeName: String) {
-        // Log.d("ConduitFillVM", "onConduitTypeChange: $newTypeName") // Removed Log
         // Update the selected type. The availableConduitSizes flow will react.
-        // Reset the selected size. The UI should observe availableConduitSizes and select the first one when it updates.
-        _uiState.update { it.copy(selectedConduitTypeName = newTypeName, selectedConduitSize = "", errorMessage = null) }
-        // No need to manually wait for sizes here, UI will handle it reactively.
-        // Calculation will be triggered by onConduitSizeChange when UI updates the size.
+        _uiState.update { it.copy(selectedConduitTypeName = newTypeName, selectedConduitSize = "") } // Removed errorMessage = null
+
+        // Launch a coroutine to observe availableConduitSizes and select the first non-empty list
+        viewModelScope.launch {
+            availableConduitSizes
+                .filter { it.isNotEmpty() } // Wait for the first non-empty list
+                .firstOrNull() // Get the first non-empty list and cancel collection
+                ?.let { sizes ->
+                    // Once sizes are available, automatically select the first one
+                    _uiState.update { it.copy(selectedConduitSize = sizes.first()) }
+                    Log.d("ConduitFillVM", "Automatically selected first conduit size: ${sizes.first()}") // ADDED Log
+                }
+        }
     }
 
     fun onConduitSizeChange(newSize: String) {
         // Log.d("ConduitFillVM", "onConduitSizeChange: $newSize") // Removed Log
         if (newSize.isNotBlank()) { // Only calculate if a valid size is selected
-             _uiState.update { it.copy(selectedConduitSize = newSize, errorMessage = null) }
+             _uiState.update { it.copy(selectedConduitSize = newSize) } // Removed errorMessage = null
              calculateFill()
         } else {
-             _uiState.update { it.copy(selectedConduitSize = "", errorMessage = "Please select a conduit size.") } // Keep size blank, maybe show error
+             viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Please select a conduit size.")) } // Emit error event
+             _uiState.update { it.copy(selectedConduitSize = "") } // Keep size blank
         }
     }
 
-     fun addWireEntry() {
-         viewModelScope.launch { // Need scope for repository access
-             // Get default values from the current state of the flows
-             val defaultWireType = wireTypeNames.value.firstOrNull() ?: ""
-             // Fetch sizes specifically for the default wire type
-             val sizesForDefaultType = if (defaultWireType.isNotEmpty()) {
-                 try {
-                     necDataRepository.getDistinctWireSizesForType(defaultWireType).firstOrNull() ?: emptyList()
-                 } catch (e: Exception) {
-                     Log.e("ConduitFillVM", "Error fetching sizes for default type $defaultWireType", e)
-                     emptyList() // Fallback to empty list on error
-                 }
-             } else {
-                 emptyList()
-              }
-              val defaultConductorSize = sizesForDefaultType.firstOrNull() ?: "" // Get first size for the specific type
+    fun addWireEntry() {
+        // Access the value directly since SharingStarted is Eagerly
+        val defaultWireType = wireTypeNames.value.firstOrNull() ?: ""
 
-              // Log.d("ConduitFillVM", "Adding wire entry with defaults: Type=$defaultWireType, Size=$defaultConductorSize") // Removed Log
+        if (defaultWireType.isNotBlank()) {
+            // Get the StateFlow for the default wire type and access its value directly
+            val sizesForDefaultTypeFlow = createConductorSizesFlowForEntry(_uiState.value.wireEntries.size) // Create flow for the new entry's index
+            val defaultConductorSize = sizesForDefaultTypeFlow.value.firstOrNull() ?: "" // Get the first size from the first non-empty list
 
-              val newEntry = WireEntry(type = defaultWireType, size = defaultConductorSize) // Use correct default size
-              _uiState.update { currentState ->
-                  currentState.copy(wireEntries = currentState.wireEntries + newEntry)
-              }
-              // Log.d("ConduitFillVM", "Wire entry added.") // Removed Log
-              calculateFill() // Recalculate after adding (already outside launch, but fine here)
-          }
-          // Log.d("ConduitFillVM", "Wire entry added.") // Removed Log
-          calculateFill() // Recalculate after adding
-     }
+            val newEntry = WireEntry(type = defaultWireType, size = defaultConductorSize) // Use correct default size
+            _uiState.update { currentState ->
+                currentState.copy(wireEntries = currentState.wireEntries + newEntry)
+            }
+            // No need to call calculateFill here, updateWireEntry will handle it
+        } else {
+             // Optionally handle the case where wire types are still not loaded
+             Log.w("ConduitFillVM", "Cannot add wire entry: Wire types not loaded.")
+             viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Cannot add wire entry: Wire types not loaded.")) } // Emit error event
+        }
+    }
 
-     fun removeWireEntry(index: Int) {
-        if (_uiState.value.wireEntries.size > 1) {
+    fun removeWireEntry(index: Int) {
+        if (_uiState.value.wireEntries.size > 0) { // Allow removing even the last one now
             _uiState.update { currentState ->
                 val updatedList = currentState.wireEntries.filterIndexed { i, _ -> i != index }
                 currentState.copy(wireEntries = updatedList)
+            }
+            // Remove the corresponding size flow from the map
+            _availableConductorSizesForEntry.update { currentMap ->
+                currentMap.toMutableMap().apply {
+                    remove(index)
+                    // Adjust keys for entries after the removed one
+                    val keysToAdjust = keys.filter { it > index }.sorted()
+                    keysToAdjust.forEach { oldIndex ->
+                        val flow = remove(oldIndex)
+                        if (flow != null) {
+                            put(oldIndex - 1, flow)
+                        }
+                    }
+                }.toMap()
             }
             calculateFill()
         }
@@ -202,7 +283,7 @@ class ConduitFillViewModel @Inject constructor(
                 // We just update the entry in the list.
                 currentList[index] = entryToUpdate
 
-                _uiState.update { it.copy(wireEntries = currentList.toList(), errorMessage = null) }
+                _uiState.update { it.copy(wireEntries = currentList.toList()) } // Removed errorMessage = null
                 calculateFill() // Calculate fill after state update
             }
         }
@@ -226,7 +307,7 @@ class ConduitFillViewModel @Inject constructor(
                  necDataRepository.getConduitEntry(currentState.selectedConduitTypeName, currentState.selectedConduitSize)
             } catch (e: Exception) {
                 Log.e("ConduitFillVM", "Error fetching conduit entry", e)
-                _uiState.update { it.copy(errorMessage = "Error fetching conduit data: ${e.message}") }
+                viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Error fetching conduit data: ${e.message}")) } // Emit error event
                 return@launch
             }
 
@@ -234,7 +315,8 @@ class ConduitFillViewModel @Inject constructor(
 
             if (conduitArea == null || conduitArea <= 0) {
                 Log.w("ConduitFillVM", "Conduit properties not found or invalid area for ${currentState.selectedConduitTypeName} ${currentState.selectedConduitSize}")
-                _uiState.update { it.copy(errorMessage = "Conduit properties not found or invalid area.", totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) }
+                viewModelScope.launch { _uiEvent.emit(UiEvent.ShowError("Conduit properties not found or invalid area.")) } // Emit error event
+                _uiState.update { it.copy(totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) }
                 return@launch
             }
 
@@ -245,7 +327,7 @@ class ConduitFillViewModel @Inject constructor(
 
              if (currentState.wireEntries.isEmpty()) {
                  // Log.d("ConduitFillVM", "No wire entries, setting fill to 0.") // Removed Log
-                  _uiState.update { it.copy(totalWireArea = 0.0, allowableFillArea = conduitArea * 0.4, fillPercentage = 0.0, isOverfill = false, errorMessage = null) } // Default to 40% allowable if empty
+                  _uiState.update { it.copy(totalWireArea = 0.0, allowableFillArea = conduitArea * 0.4, fillPercentage = 0.0, isOverfill = false) } // Default to 40% allowable if empty, Removed errorMessage = null
                   return@launch
              }
 
@@ -282,7 +364,8 @@ class ConduitFillViewModel @Inject constructor(
 
             if (!calculationPossible) {
                 // Log.w("ConduitFillVM", "Calculation not possible: $errorMsg") // Keep warning log for now, maybe remove later
-                _uiState.update { it.copy(errorMessage = errorMsg, totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) }
+                viewModelScope.launch { if (errorMsg != null) _uiEvent.emit(UiEvent.ShowError(errorMsg)) } // Emit error event
+                _uiState.update { it.copy(totalWireArea = null, allowableFillArea = null, fillPercentage = null, isOverfill = false) } // Removed errorMessage = null
                 return@launch
             }
 
@@ -309,8 +392,8 @@ class ConduitFillViewModel @Inject constructor(
                     totalWireArea = currentTotalWireArea,
                     allowableFillArea = allowableArea,
                     fillPercentage = percentage,
-                    isOverfill = overfill,
-                    errorMessage = null // Clear error if calculation succeeds
+                    isOverfill = overfill
+                    // Removed errorMessage = null // Clear error if calculation succeeds
                 )
             }
         }

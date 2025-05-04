@@ -23,6 +23,23 @@ import androidx.compose.ui.text.style.TextAlign // Import TextAlign
 import com.example.electricianappnew.ui.common.formatCalculationResult // Import renamed shared helper
 import java.util.Locale // Import Locale
 
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+// Removed unused toDp import
+// Removed duplicate LocalDensity import
+// Removed duplicate toDp import
+import androidx.compose.ui.unit.toSize // Add import for toSize
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+
 @OptIn(ExperimentalMaterial3Api::class) // Needed for TopAppBar
 @Composable
 fun BoxFillScreen(
@@ -30,8 +47,9 @@ fun BoxFillScreen(
     viewModel: BoxFillViewModel = hiltViewModel(),
     navController: NavController // Add NavController parameter
 ) {
-    val uiState = viewModel.uiState // Observe state directly - Remove 'by' delegate for direct access
-    // val conductorSizes = viewModel.conductorSizes // Get sizes for inputs - Moved inside Column where used
+    val uiState = viewModel.uiState
+    val conductorSizes = viewModel.conductorSizes // Observe conductorSizes directly
+    android.util.Log.d("BoxFillScreen", "Rendering with conductorSizes: $conductorSizes") // Add logging
 
     Scaffold(
         topBar = {
@@ -66,11 +84,12 @@ fun BoxFillScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 // Use viewModel.conductorSizes for iteration
-                items(viewModel.conductorSizes) { size ->
-                    CountInputRow(
+                items(conductorSizes) { size ->
+                    CountDropdownRow(
                         label = size,
                         count = uiState.conductorCounts[size] ?: "0", // Access map within uiState
-                        onCountChange = { countStr -> viewModel.onConductorCountChange(size, countStr) }
+                        onCountChange = { countStr -> viewModel.onConductorCountChange(size, countStr) },
+                        options = (0..20).toList().map { it.toString() }
                     )
                 }
 
@@ -81,11 +100,12 @@ fun BoxFillScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 // Use viewModel.conductorSizes for iteration
-                items(viewModel.conductorSizes) { size ->
-                    CountInputRow(
+                items(conductorSizes) { size ->
+                    CountDropdownRow(
                         label = size,
                         count = uiState.groundCounts[size] ?: "0", // Access map within uiState
-                        onCountChange = { countStr -> viewModel.onGroundCountChange(size, countStr) }
+                        onCountChange = { countStr -> viewModel.onGroundCountChange(size, countStr) },
+                        options = (0..20).toList().map { it.toString() }
                     )
                 }
 
@@ -93,7 +113,12 @@ fun BoxFillScreen(
 
                 item {
                     Text("Other Allowances:", style = MaterialTheme.typography.titleMedium)
-                    CountInputRow(label = "Devices (Yokes/Straps)", count = uiState.numDevicesStr, onCountChange = viewModel::onDeviceCountChange) // Access property of uiState
+                    CountDropdownRow(
+                        label = "Devices (Yokes/Straps)",
+                        count = uiState.numDevicesStr, // Access property of uiState
+                        onCountChange = viewModel::onDeviceCountChange,
+                        options = (0..20).toList().map { it.toString() }
+                    )
                 }
 
                 item { Spacer(modifier = Modifier.height(16.dp)) }
@@ -173,3 +198,64 @@ fun CountInputRow( // REMOVED private modifier
 // Removed local formatResult - using shared version from common package
 
 // Preview removed
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CountDropdownRow(
+    label: String,
+    count: String,
+    onCountChange: (String) -> Unit,
+    options: List<String>
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+    val icon = if (expanded)
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, modifier = Modifier.weight(1f))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = count,
+                onValueChange = { }, // Read-only for dropdown
+                readOnly = true,
+                label = { Text("Count") },
+                trailingIcon = {
+                    Icon(icon, "dropdown icon")
+                },
+                modifier = Modifier
+                    .width(100.dp) // Adjust width as needed
+                    .menuAnchor()
+                    .onGloballyPositioned { coordinates ->
+                        // This value is used to assign to the Dropdown the same width
+                        textFieldSize = coordinates.size.toSize()
+                    }
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(textFieldSize.width.dp) // Use .dp extension instead of .toDp()
+            ) {
+                options.forEach { selectionOption ->
+                    DropdownMenuItem(
+                        text = { Text(selectionOption) },
+                        onClick = {
+                            onCountChange(selectionOption)
+                            expanded = false
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    )
+                }
+            }
+        }
+    }
+}

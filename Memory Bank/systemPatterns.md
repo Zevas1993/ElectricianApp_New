@@ -24,6 +24,6 @@ The application follows a Model-View-ViewModel (MVVM) architecture pattern, part
 - **Assets (Specific JSON files):** Initial source for NEC data population (e.g., `wire_ampacity_data.json`, `voltage_drop_data.json`).
 
 ## Critical Implementation Paths
-- **NEC Data Loading:** The process of reading the specific JSON files, parsing them, and populating the Room database via `DatabaseCallback` is critical for calculator functionality.
+- **NEC Data Loading:** The process of reading the specific JSON files, parsing them, and populating the Room database via `DatabaseCallback` is critical for calculator functionality. The data loading and basic calculation issues in the Conduit Fill and Box Fill calculators have been addressed, improving the reliability of this path.
 - **Calculator Logic:** The calculation logic within classes like `LuminaireCalculator.kt` and `WireAmpacityViewModel.kt` relies heavily on accurate data retrieval from the Repository.
 - **UI State Management:** The flow of data from the Repository through the ViewModel to the UI and user interaction handling are key to the application's responsiveness and correctness.

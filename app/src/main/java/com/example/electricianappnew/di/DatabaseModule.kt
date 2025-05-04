@@ -28,9 +28,10 @@ object DatabaseModule {
     @Singleton
     fun provideDatabaseCallback(
         @ApplicationContext appContext: Context,
-        dbProvider: Provider<AppDatabase> // Still need provider for lazy access inside callback
+        dbProvider: Provider<AppDatabase>, // Still need provider for lazy access inside callback
+        necDataRepositoryProvider: Provider<NecDataRepository> // Inject Provider
     ): DatabaseCallback {
-        return DatabaseCallback(appContext, dbProvider)
+        return DatabaseCallback(appContext, dbProvider, necDataRepositoryProvider)
     }
 
     @Provides

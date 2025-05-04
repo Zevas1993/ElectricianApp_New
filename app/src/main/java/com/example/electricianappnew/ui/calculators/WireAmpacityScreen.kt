@@ -192,22 +192,34 @@ fun WireAmpacityScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Results Section (Use uiState for results and errors)
-            Text("Results:", style = MaterialTheme.typography.titleMedium)
+            Text("Calculation Details:", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Base Ampacity: ${uiState.baseAmpacity?.formatCalculationResult() ?: "N/A"}")
-            Text(text = "Temp Correction Factor: ${uiState.tempCorrectionFactor?.formatCalculationResult() ?: "N/A"}")
-            Text(text = "Conductor Adjustment Factor: ${uiState.conductorAdjustmentFactor?.formatCalculationResult() ?: "N/A"}")
-            Text(text = "Adjusted Ampacity: ${uiState.adjustedAmpacity?.formatCalculationResult() ?: "N/A"} A", style = MaterialTheme.typography.titleLarge)
+
+            uiState.baseAmpacity?.let {
+                Text(text = "Base Ampacity: ${it.formatCalculationResult()} A")
+            }
+            uiState.tempCorrectionFactor?.let {
+                Text(text = "Temp Correction Factor: ${it.formatCalculationResult()}")
+            }
+            uiState.conductorAdjustmentFactor?.let {
+                Text(text = "Conductor Adjustment Factor: ${it.formatCalculationResult()}")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            uiState.adjustedAmpacity?.let {
+                Text(text = "Adjusted Ampacity: ${it.formatCalculationResult()} A", style = MaterialTheme.typography.titleLarge)
+            }
 
             uiState.errorMessage?.let { error ->
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = error, color = MaterialTheme.colorScheme.error)
+                Text(text = "Error: $error", color = MaterialTheme.colorScheme.error)
             }
 
-             Spacer(modifier = Modifier.height(16.dp))
-             Button(onClick = viewModel::clearInputs) { // Call ViewModel
-                 Text("Clear / Reset")
-             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = viewModel::clearInputs) { // Call ViewModel
+                Text("Clear / Reset")
+            }
         }
     }
 }

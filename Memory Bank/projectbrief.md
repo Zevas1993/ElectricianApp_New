@@ -4,7 +4,7 @@
 The Electrician App is a mobile application designed to assist electricians with various tasks, including calculations, job management, inventory tracking, and documentation.
 
 ## Core Requirements
-- Provide accurate electrical calculations based on NEC standards.
+- Provide accurate electrical calculations based on NEC standards. The data loading and basic calculation issues in the Conduit Fill and Box Fill calculators have been resolved, contributing to meeting this requirement.
 - Manage client information and job details.
 - Track inventory and materials.
 - Allow photo documentation for jobs.
@@ -12,7 +12,7 @@ The Electrician App is a mobile application designed to assist electricians with
 
 ## Goals
 - Improve the accuracy and completeness of all calculators, starting with the Luminaire Layout calculator.
-- Fully populate the NEC data used by the application.
+- Fully populate the NEC data used by the application. The data loading issues in the Conduit Fill and Box Fill calculators have been addressed, moving closer to achieving this goal.
 - Enhance the user interface and user experience.
 - Ensure data persistence and reliability.
 - Maintain a well-documented codebase and project context using the Memory Bank.

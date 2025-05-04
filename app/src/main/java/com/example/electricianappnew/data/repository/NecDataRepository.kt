@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
@@ -33,6 +36,8 @@ data class AmpacityCalculationResult(
 
 // Interface for accessing NEC-related data
 interface NecDataRepository {
+    val isDataLoaded: StateFlow<Boolean>
+    fun setDataLoaded() // Add setDataLoaded to the interface
     suspend fun getAmpacityEntry(material: String, size: String, tempRating: Int): NecAmpacityEntry?
     fun getDistinctAmpacityWireSizes(): Flow<List<String>>
     fun getDistinctAmpacityTempRatings(): Flow<List<Int>>
@@ -90,6 +95,63 @@ class NecDataRepositoryImpl @Inject constructor(
     private val context: Context // Inject Context to access assets
 ) : NecDataRepository {
 
+    private val _isDataLoaded = MutableStateFlow(false)
+    override val isDataLoaded: StateFlow<Boolean> = _isDataLoaded.asStateFlow()
+
+    override fun setDataLoaded() {
+        _isDataLoaded.value = true
+    }
+
+    init {
+        // Proactively load conduit fill data when the repository is created
+        // This ensures the data is available when the ViewModel requests it.
+        // We still wait for the main data loaded flag in case other data is needed.
+        // Note: This requires a CoroutineScope, which is not directly available in a Singleton.
+        // We might need to inject a CoroutineScope or use a global scope if appropriate.
+        // For now, let's assume a suitable scope is available or we'll address this next.
+        // Let's add a placeholder for now and refine if needed.
+        // TODO: Inject or provide a suitable CoroutineScope for init block async operations.
+        // For now, we'll rely on the first access to trigger loading via the suspend functions.
+        // The ViewModel's init block waiting for isDataLoaded should be sufficient if the
+        // suspend functions are called within the Flow chain.
+
+        // Re-evaluating: The Flow chains in the ViewModel *do* call the suspend functions
+        // which trigger the loading. The issue might be that the ViewModel's init block
+        // tries to access .value on the StateFlows *before* the Flow chain has emitted
+        // the first value after the data is loaded.
+
+        // Let's try adding a launch block here to ensure the data is loaded early.
+        // We'll need a CoroutineScope. Let's assume we can get one via injection or context.
+        // For now, let's add the loading call and we'll address the scope if there's a build error.
+        // We can use a simple GlobalScope.launch for now, but injecting is better practice.
+        // Let's add the loading call within a placeholder launch block.
+
+        // Update: Let's not add a launch block here yet. The current pattern of
+        // suspend functions reading data on first access within the Flow chain
+        // should work *if* the ViewModel correctly collects from the Flow.
+        // The ViewModel's init block *is* waiting for isDataLoaded, but then
+        // it accesses `.value` which might still be the `initialValue = emptyList()`.
+
+        // The fix might be in the ViewModel's init block: instead of accessing `.value`
+        // directly, it should collect the first non-empty list from `wireTypeNames`
+        // and `availableConductorSizesForEntry(0)` before creating the initial WireEntry.
+
+        // Let's go back to the ViewModel after confirming the repository's loading logic is sound.
+        // The repository's suspend functions *do* load and cache the data on first call.
+        // The Flow functions like `getDistinctWireTypes()` call these suspend functions.
+        // The ViewModel collects from these Flows. The issue is likely the timing in the ViewModel's init.
+
+        // Let's confirm the repository's loading logic is called. We can add a log in getConduitFillData.
+        // (Already added in previous step).
+
+        // Okay, the repository seems to be set up to load data on demand via suspend functions
+        // called within the Flow builders. The problem is likely in the ViewModel's init block
+        // accessing the StateFlows' initial empty values.
+
+        // Let's proceed to examine the ViewModel's init block again with this understanding.
+        // No changes needed in the repository for now based on this analysis.
+    }
+
     // Private properties to cache data read from JSON assets
     private var _ampacityData: List<NecAmpacityEntry>? = null
     private var _tempCorrectionData: List<NecTempCorrectionEntry>? = null
@@ -123,6 +185,10 @@ class NecDataRepositoryImpl @Inject constructor(
     private suspend fun getTempCorrectionData(): List<NecTempCorrectionEntry> {
         if (_tempCorrectionData == null) {
             _tempCorrectionData = readJsonAsset("wire_ampacity_data.json", "temp_corrections")
+            Log.d(TAG, "Loaded temp correction data: ${_tempCorrectionData?.size} entries")
+            _tempCorrectionData?.forEach { entry ->
+                Log.d(TAG, "getTempCorrectionData: Loaded entry tempRating: ${entry.tempRating}")
+            }
         }
         return _tempCorrectionData ?: emptyList()
     }
@@ -136,7 +202,7 @@ class NecDataRepositoryImpl @Inject constructor(
 
     private suspend fun getConductorPropertiesData(): List<NecConductorEntry> {
         if (_conductorPropertiesData == null) {
-            _conductorPropertiesData = readJsonAsset("conductor_properties.json", "conductor_properties")
+            _conductorPropertiesData = readJsonAsset("wire_ampacity_data.json", "conductor_properties")
         }
         return _conductorPropertiesData ?: emptyList()
     }
@@ -193,6 +259,11 @@ class NecDataRepositoryImpl @Inject constructor(
                     if (jsonKey != null) {
                         val jsonObject: JsonObject = gson.fromJson(reader, JsonObject::class.java)
                         val jsonArray: JsonArray = jsonObject.getAsJsonArray(jsonKey)
+                        Log.d(TAG, "readJsonAsset: Extracted JsonArray for key '$jsonKey' from $fileName: ${jsonArray.size()} elements")
+                        // Log the first few elements to inspect
+                        jsonArray.take(5).forEachIndexed { index, jsonElement ->
+                            Log.d(TAG, "readJsonAsset: Element $index: ${jsonElement.toString()}")
+                        }
                         gson.fromJson(jsonArray, object : TypeToken<T>() {}.type)
                     } else {
                         val dataType = object : TypeToken<T>() {}.type
@@ -206,6 +277,87 @@ class NecDataRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing JSON asset $fileName: ${e.message}", e)
             null
+        }
+    }
+
+    /**
+     * Returns the temperature correction factor for a given conductor tempRating (°C)
+     * and ambientTemp (°C).
+     * - If no entries found for the rating, returns null.
+     * - If ambientTemp is below the lowest table entry, returns the lowest factor.
+     * - If above the highest entry, returns the highest factor.
+     * - Otherwise, linearly interpolates between the two nearest entries.
+     */
+    private suspend fun getTempCorrectionFactor(
+        tempRating: Int,
+        ambientTemp: Double
+    ): Double? {
+        Log.d(TAG, "getTempCorrectionFactor: tempRating=$tempRating, ambientTemp=$ambientTemp")
+        val allEntries = getTempCorrectionData()
+        Log.d(TAG, "getTempCorrectionFactor: All tempRatings loaded: ${allEntries.map { it.tempRating }}")
+        val entries = allEntries.filter { it.tempRating == tempRating }.sortedBy { it.ambientTempCelsius }
+
+        Log.d(TAG, "getTempCorrectionFactor: Filtering for $tempRating yielded: ${entries.size} entries")
+        entries.forEach { entry ->
+            Log.d(TAG, " • rating ${entry.tempRating}°C: ambient=${entry.ambientTempCelsius} factor=${entry.correctionFactor}")
+        }
+
+        if (entries.isEmpty()) {
+            Log.w(TAG, "No temperature correction entries found for temp rating $tempRating°C. Entries list is empty.")
+            return null
+        }
+
+        // Sort by ambientTemperature ascending
+        val sorted = entries.sortedBy { it.ambientTempCelsius }
+
+        // If below the lowest, return the factor at the lowest point (or 1.0 to imply no derating)
+        if (ambientTemp <= sorted.first().ambientTempCelsius) {
+            return sorted.first().correctionFactor.takeIf { it > 0 } ?: 1.0
+        }
+        // If above the highest, return the highest available factor (or null/error)
+        if (ambientTemp >= sorted.last().ambientTempCelsius) {
+            return sorted.last().correctionFactor.takeIf { it > 0 } ?: null
+        }
+
+        // Otherwise, find the two bracket values and linearly interpolate or just pick
+        val lower = sorted.last { it.ambientTempCelsius <= ambientTemp }
+        val upper = sorted.first { it.ambientTempCelsius >= ambientTemp }
+        return if (lower == upper) {
+            lower.correctionFactor
+        } else {
+            // simple linear interpolation
+            val range = upper.ambientTempCelsius - lower.ambientTempCelsius
+            val weight = (ambientTemp - lower.ambientTempCelsius) / range
+            lower.correctionFactor + weight * (upper.correctionFactor - lower.correctionFactor)
+        }
+    }
+
+    /**
+     * Returns the conductor adjustment factor for a given number of current-carrying conductors.
+     * Returns 1.0 if the number of conductors is 3 or less, or if no matching entry is found.
+     */
+    private fun getConductorAdjustmentFactor(numConductors: Int): Double {
+        return when {
+            numConductors <= 3 -> 1.0
+            numConductors in 4..6 -> 0.8
+            numConductors in 7..9 -> 0.7
+            numConductors >= 10 -> 0.5
+            else -> 1.0
+        }
+    }
+
+
+    // Helper function to check wire size (simplified) - Defined at class level
+    private fun isSizeGreaterThan1AWG(size: String): Boolean {
+        // Improved logic: Handle AWG and kcmil separately
+        return when {
+            size.contains("kcmil", ignoreCase = true) -> true // All kcmil sizes are > 1 AWG
+            size.contains("AWG", ignoreCase = true) -> {
+                val awgNumber = size.substringBefore(" AWG", "").trim().toIntOrNull()
+                awgNumber != null && awgNumber < 1 // Sizes like 1/0, 2/0 etc. are < 1
+            }
+            // Assume non-standard formats might be larger if not AWG/kcmil? Safer to default false.
+            else -> false // Default case if format is unexpected
         }
     }
 
@@ -265,7 +417,10 @@ class NecDataRepositoryImpl @Inject constructor(
     }
 
     override fun getDistinctWireTypes(): Flow<List<String>> = flow {
-        emit(getConduitFillData().mapNotNull { it.insulationType }.distinct().sorted())
+        Log.d(TAG, "getDistinctWireTypes: Called")
+        val wireTypes = getConduitFillData().mapNotNull { it.insulationType }.distinct().sorted()
+        Log.d(TAG, "getDistinctWireTypes: Emitting wire types: $wireTypes")
+        emit(wireTypes)
     }
 
     override fun getDistinctWireSizesForType(insulationType: String): Flow<List<String>> = flow {
@@ -291,7 +446,12 @@ class NecDataRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDistinctBoxFillConductorSizes(): List<String> {
-        return getBoxFillData().mapNotNull { it.conductorSize }.distinct().sorted()
+        return getBoxFillData()
+            .filter { it.item_type == "Conductor" } // Filter for conductor entries
+            .mapNotNull { it.conductorSize }
+            .distinct()
+            .sorted()
+            .also { Log.d(TAG, "getDistinctBoxFillConductorSizes: Returning sizes: $it") } // Add logging here
     }
 
     override suspend fun getMotorFLCEntry(hp: Double, voltage: Int, phase: String): NecMotorFLCEntry? {
@@ -351,7 +511,6 @@ class NecDataRepositoryImpl @Inject constructor(
         }
     }
 
-    // Update getAll methods to use the new JSON reading functions
     override fun getAllNecAmpacityEntries(): Flow<List<NecAmpacityEntry>> = flow { emit(getAmpacityData()) }
     override fun getAllNecConductorEntries(): Flow<List<NecConductorEntry>> = flow { emit(getConductorPropertiesData()) }
     override fun getAllAcImpedanceEntries(): Flow<List<NecAcImpedanceEntry>> = flow { emit(emptyList()) } // No direct AC Impedance table in new JSONs?
@@ -489,7 +648,7 @@ class NecDataRepositoryImpl @Inject constructor(
                 )
             }
 
-            // 2. Get Temperature Correction Factor using the new helper function
+            // 2. Get Temperature Correction Factor
             val tempCorrectionFactor = getTempCorrectionFactor(tempRating, ambientTempC)
 
             if (tempCorrectionFactor == null) {
@@ -501,8 +660,7 @@ class NecDataRepositoryImpl @Inject constructor(
             }
 
             // 3. Get Conductor Adjustment Factor
-            val conductorAdjustmentEntry = getConductorAdjustmentFactorEntry(numConductors)
-            val conductorAdjustmentFactor = conductorAdjustmentEntry?.adjustmentFactor ?: 1.0 // Default to 1.0 if not found
+            val conductorAdjustmentFactor = getConductorAdjustmentFactor(numConductors)
 
             // 4. Calculate Adjusted Ampacity (before termination limits)
             val adjustedAmpacityPreTermination = baseAmpacity * tempCorrectionFactor * conductorAdjustmentFactor
@@ -531,66 +689,6 @@ class NecDataRepositoryImpl @Inject constructor(
 
         } catch (e: Exception) {
             return AmpacityCalculationResult(errorMessage = "Calculation error: ${e.message}")
-        }
-    }
-
-    /**
-     * Returns the temperature correction factor for a given conductor tempRating (°C)
-     * and ambientTemp (°C).
-     * - If no entries found for the rating, returns null.
-     * - If ambientTemp is below the lowest table entry, returns the lowest factor.
-     * - If above the highest entry, returns the highest factor.
-     * - Otherwise, linearly interpolates between the two nearest entries.
-     */
-    private suspend fun getTempCorrectionFactor(
-        tempRating: Int,
-        ambientTemp: Double
-    ): Double? {
-        val entries = getTempCorrectionData().filter { it.tempRating == tempRating }.sortedBy { it.ambientTempCelsius }
-
-        if (entries.isEmpty()) {
-            Log.w(TAG, "No temperature correction entries found for temp rating $tempRating°C.")
-            return null
-        }
-
-        // If ambient temp is below the lowest entry, use the lowest factor
-        if (ambientTemp <= entries.first().ambientTempCelsius) {
-            return entries.first().correctionFactor
-        }
-
-        // If ambient temp is above the highest entry, use the highest factor
-        if (ambientTemp >= entries.last().ambientTempCelsius) {
-            return entries.last().correctionFactor
-        }
-
-        // Find the two nearest entries for interpolation
-        val upperEntry = entries.first { it.ambientTempCelsius >= ambientTemp }
-        val lowerEntry = entries.last { it.ambientTempCelsius <= ambientTemp }
-
-        // Linear interpolation
-        val tempRange = upperEntry.ambientTempCelsius - lowerEntry.ambientTempCelsius
-        val factorRange = upperEntry.correctionFactor - lowerEntry.correctionFactor
-        val tempDiff = ambientTemp - lowerEntry.ambientTempCelsius
-
-        return if (tempRange == 0.0) {
-            lowerEntry.correctionFactor // Should not happen if entries are distinct, but handle division by zero
-        } else {
-            lowerEntry.correctionFactor + (tempDiff / tempRange) * factorRange
-        }
-    }
-
-
-    // Helper function to check wire size (simplified) - Defined at class level
-    private fun isSizeGreaterThan1AWG(size: String): Boolean {
-        // Improved logic: Handle AWG and kcmil separately
-        return when {
-            size.contains("kcmil", ignoreCase = true) -> true // All kcmil sizes are > 1 AWG
-            size.contains("AWG", ignoreCase = true) -> {
-                val awgNumber = size.substringBefore(" AWG", "").trim().toIntOrNull()
-                awgNumber != null && awgNumber < 1 // Sizes like 1/0, 2/0 etc. are < 1
-            }
-            // Assume non-standard formats might be larger if not AWG/kcmil? Safer to default false.
-            else -> false // Default case if format is unexpected
         }
     }
 

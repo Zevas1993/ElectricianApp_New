@@ -11,7 +11,7 @@ The app should provide intuitive interfaces for each module (Calculators, Jobs, 
 
 ## User Experience Goals
 - **Ease of Use:** Simple and intuitive navigation and data entry.
-- **Accuracy:** Reliable calculations based on up-to-date NEC standards.
-- **Efficiency:** Speed up common tasks like calculations and documentation.
+- **Accuracy:** Reliable calculations based on up-to-date NEC standards. The data loading and basic calculation issues in the Conduit Fill and Box Fill calculators have been resolved, contributing to improved accuracy and usability.
+- **Efficiency:** Speed up common tasks like calculations and documentation. The resolution of the Conduit Fill and Box Fill calculator issues enhances efficiency for tasks requiring these calculations.
 - **Organization:** Provide structured ways to manage jobs, inventory, and photos.
 - **Accessibility:** Make essential NEC information readily available.

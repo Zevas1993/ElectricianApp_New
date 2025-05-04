@@ -18,9 +18,12 @@ import javax.inject.Provider
 
 // Removed NecJsonData helper class as we are now reading from separate files
 
+import com.example.electricianappnew.data.repository.NecDataRepository
+
 class DatabaseCallback(
     private val context: Context,
-    private val databaseProvider: Provider<AppDatabase>
+    private val databaseProvider: Provider<AppDatabase>,
+    private val necDataRepositoryProvider: Provider<NecDataRepository>
 ) : RoomDatabase.Callback() {
 
     private val tag = "AppStartup"
@@ -84,7 +87,7 @@ class DatabaseCallback(
              readAndInsertData<List<NecConductorEntry>>(
                 context,
                 gson,
-                "conductor_properties.json",
+                "wire_ampacity_data.json", // Updated file name
                 "conductor_properties", // dataDescription
                 tag,
                 "conductor_properties" // jsonKey
@@ -261,6 +264,7 @@ class DatabaseCallback(
 
             Log.d(tag, ">>> DatabaseCallback populateDatabase: All insertions complete.")
             Log.d(tag, ">>> DatabaseCallback populateDatabase: NEC data successfully populated.")
+            necDataRepositoryProvider.get().setDataLoaded()
 
         } catch (e: Exception) {
             Log.e(tag, ">>> DatabaseCallback populateDatabase: !!! UNCAUGHT EXCEPTION during population: ${e.message}", e)
