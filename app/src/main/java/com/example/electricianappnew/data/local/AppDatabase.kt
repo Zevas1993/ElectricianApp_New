@@ -33,7 +33,7 @@ import com.example.electricianappnew.data.model.*
         NecArticle::class,
         NecSection::class,
         NecSectionFts::class,
-        NecCuTable::class, // Added for Luminaire Calc
+        // NecCuTable::class, // Added for Luminaire Calc
         NecAcImpedanceEntry::class, // Added for AC Impedance
         NecMotorProtectionNonTimeDelayFuseSizeEntry::class, // Corrected entity name
         NecMotorProtectionTimeDelayFuseSizeEntry::class // Corrected entity name

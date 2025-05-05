@@ -1,8 +1,8 @@
 package com.example.electricianappnew.calculator
 
 import com.example.electricianappnew.data.repository.NecDataRepository
-import com.example.electricianappnew.data.model.NecCuTable
-import com.example.electricianappnew.data.model.NecCuValue
+import com.example.electricianappnew.data.jsonmodels.NecCuTable
+import com.example.electricianappnew.data.jsonmodels.NecCuValue
 import com.example.electricianappnew.ui.calculators.viewmodel.CalculationMode
 import com.example.electricianappnew.ui.calculators.viewmodel.LuminaireLayoutType
 import kotlinx.coroutines.flow.firstOrNull

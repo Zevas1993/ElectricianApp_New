@@ -116,8 +116,8 @@ object DatabaseModule {
 
   @Provides
   @Singleton
-  fun provideNecDataRepository(dao: NecDataDao, @ApplicationContext appContext: Context): NecDataRepository {
-      return NecDataRepositoryImpl(dao, appContext)
+  fun provideNecDataRepository(@ApplicationContext appContext: Context, dao: NecDataDao): NecDataRepository {
+      return NecDataRepositoryImpl(appContext, dao)
   }
 
     // Alternative using @Binds (if repositories were interfaces bound to implementations)

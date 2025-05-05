@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 49,
-    "identityHash": "950a7ed6d6361dbe87870d402461440f",
+    "identityHash": "036fc7e710e93c0693c41e845bb46f0e",
     "entities": [
       {
         "tableName": "jobs",
@@ -1045,53 +1045,6 @@
         ]
       },
       {
-        "tableName": "nec_cu_tables",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `description` TEXT, `ceiling_reflectance` INTEGER NOT NULL, `wall_reflectance` INTEGER NOT NULL, `floor_reflectance` INTEGER NOT NULL, `cu_values` TEXT NOT NULL)",
-        "fields": [
-          {
-            "fieldPath": "id",
-            "columnName": "id",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "description",
-            "columnName": "description",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "ceilingReflectance",
-            "columnName": "ceiling_reflectance",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "wallReflectance",
-            "columnName": "wall_reflectance",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "floorReflectance",
-            "columnName": "floor_reflectance",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "cuValues",
-            "columnName": "cu_values",
-            "affinity": "TEXT",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": true,
-          "columnNames": [
-            "id"
-          ]
-        }
-      },
-      {
         "tableName": "nec_ac_impedance",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`material` TEXT NOT NULL, `size` TEXT NOT NULL, `resistance_ac_ohms_per_1000ft` REAL NOT NULL, `reactance_ohms_per_1000ft` REAL NOT NULL, PRIMARY KEY(`material`, `size`))",
         "fields": [
@@ -1205,7 +1158,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '950a7ed6d6361dbe87870d402461440f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '036fc7e710e93c0693c41e845bb46f0e')"
     ]
   }
 }

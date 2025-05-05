@@ -5,6 +5,7 @@ plugins {
     id 'kotlin-kapt' // Apply KAPT plugin
     id 'com.google.dagger.hilt.android'
     id 'org.jetbrains.kotlin.plugin.compose' // Apply Compose Compiler plugin
+    id 'org.jetbrains.kotlin.plugin.serialization' version '2.1.20' // Add Kotlin Serialization plugin
 }
 
 android {
@@ -118,7 +119,11 @@ dependencies {
     // implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2" // Included transitively
 
     // Gson (for JSON parsing if needed, e.g., for NEC data)
-    implementation "com.google.code.gson:gson:2.10.1" // Keep if needed
+    // implementation "com.google.code.gson:gson:2.10.1" // Comment out Gson if switching fully
+    // Gson (for JSON parsing if needed, e.g., for NEC data)
+    implementation "com.google.code.gson:gson:2.10.1"
+    // Kotlinx Serialization
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
 
     // Testing
     testImplementation "junit:junit:4.13.2"

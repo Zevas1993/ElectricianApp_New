@@ -197,12 +197,5 @@ interface NecDataDao {
     """)
     fun searchFullCode(query: String): Flow<List<NecSearchResult.FullCodeResult>> // Return the specific result type
 
-    // --- Luminaire Layout - Coefficient of Utilization (CU) Data ---
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCuTables(tables: List<NecCuTable>)
-
-    @Query("SELECT * FROM nec_cu_tables")
-    fun getAllCuTables(): Flow<List<NecCuTable>>
-
     // TODO: Add queries for other NEC data as needed (e.g., demand factors)
 }
